@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="theme-color" content="#fff7ed">
+    <title>Today's Menu | CampusBite</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=Nunito+Sans:wght@400;600;700;800&display=swap"
+        rel="stylesheet">
+    <script>window.tailwind = window.tailwind || {}; tailwind.config = { theme: { extend: { colors: { cream: '#FFF7ED', ink: '#201A15' }, fontFamily: { display: ['"Bricolage Grotesque"', 'sans-serif'], body: ['"Nunito Sans"', 'sans-serif'] }, boxShadow: { card: '0 16px 38px -18px rgba(124,63,14,.2)' } } } };</script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #fff7ed; color: #201a15 }
+        .bg-ink { background: #201a15 }
+
+        /* Interactive elements */
+        button, a { transition: background-color 150ms ease-out, color 150ms ease-out, transform 150ms ease-out, box-shadow 150ms ease-out, border-color 150ms ease-out, opacity 200ms ease-out }
+        button:active { transform: scale(0.97) }
+        input, textarea, select { transition: border-color 150ms ease-out, box-shadow 150ms ease-out, background-color 150ms ease-out }
+
+        /* Food cards */
+        .food-image { transition: transform .35s ease-out }
+        .food-card { transition: transform 200ms ease-out, box-shadow 200ms ease-out }
+        .food-card:hover { transform: translateY(-2px); box-shadow: 0 20px 40px -20px rgba(124,63,14,.25) }
+        .food-card:hover .food-image { transform: scale(1.04) }
+
+        /* Category pills */
+        #categories button { transition: background-color 150ms ease-out, color 150ms ease-out, box-shadow 150ms ease-out }
+
+        /* Focus */
+        .focus-ring:focus-visible { outline: 2px solid #ea580c; outline-offset: 2px }
+
+        /* Modal */
+        #modal { opacity: 0; transition: opacity 200ms ease-out }
+        #modal:not(.hidden) { opacity: 1 }
+        #modal:not(.hidden) #modal-panel { transform: scale(1); opacity: 1 }
+        #modal-panel { transform: scale(0.98); opacity: 0; transition: transform 200ms ease-out, opacity 200ms ease-out }
+
+        /* Toast */
+        #toast { transition: opacity 200ms ease-out, transform 200ms ease-out }
+
+        /* Food grid transition */
+        #food-grid { transition: opacity 150ms ease-out }
+        #food-grid.fading { opacity: 0.4 }
+
+        /* Page enter */
+        main { animation: pageEnter 300ms ease-out }
+        @keyframes pageEnter { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: translateY(0) } }
+
+        /* Shimmer */
+        @keyframes shimmer { 0% { background-position: -200% 0 } 100% { background-position: 200% 0 } }
+
+        /* Reduced motion */
+        @media(prefers-reduced-motion:reduce) {
+            *, *:before, *:after {
+                animation-duration: .01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: .01ms !important;
+                scroll-behavior: auto !important
+            }
+        }
+    </style>
+</head>
+
+<body class="font-body antialiased"><a href="#main-content"
+        class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:rounded-full focus:bg-ink focus:px-4 focus:py-2 focus:text-white">Skip
+        to menu</a>
+    <header class="sticky top-0 z-40 border-b border-orange-100 bg-white/95 backdrop-blur">
+        <nav class="mx-auto flex h-18 max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8"
+            aria-label="Primary navigation"><a href="index.html"
+                class="focus-ring flex shrink-0 items-center gap-2.5 rounded-xl" aria-label="CampusBite home"><span
+                    class="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-600 text-xl">🍔</span><span
+                    class="font-display text-xl font-bold text-ink">Campus<span
+                        class="text-orange-600">Bite</span></span></a>
+            <div class="hidden items-center gap-1 md:flex"><a href="index.html"
+                    class="focus-ring rounded-full px-4 py-2 text-sm font-bold text-stone-600 hover:bg-orange-50">Home</a><a
+                    href="menu.html"
+                    class="focus-ring rounded-full bg-orange-100 px-4 py-2 text-sm font-extrabold text-orange-800"
+                    aria-current="page">Menu</a><a href="orders.html"
+                    class="focus-ring rounded-full px-4 py-2 text-sm font-bold text-stone-600 hover:bg-orange-50">My
+                    Orders</a></div>
+            <div class="ml-auto flex items-center gap-1 sm:gap-2"><label
+                    class="hidden items-center gap-2 rounded-full border border-stone-200 bg-stone-50 px-3 py-2 lg:flex"><span
+                        aria-hidden="true">⌕</span><input id="header-search" type="search" placeholder="Search food"
+                        class="w-32 bg-transparent text-sm outline-none placeholder:text-stone-400"
+                        aria-label="Search menu"></label><a href="cart.html" data-future
+                    class="focus-ring relative flex h-10 items-center gap-1.5 rounded-full bg-orange-600 px-3 text-sm font-extrabold text-white"
+                    aria-label="View cart, 0 items">🛒 <span id="cart-count">0</span></a><button type="button"
+                    data-future
+                    class="focus-ring hidden h-10 w-10 rounded-full bg-orange-100 font-bold text-orange-800 sm:block"
+                    aria-label="Student profile">S</button><button id="menu-toggle" type="button"
+                    class="focus-ring flex h-10 w-10 items-center justify-center rounded-xl border border-stone-200 md:hidden"
+                    aria-expanded="false" aria-controls="mobile-nav" aria-label="Open menu">☰</button></div>
+        </nav>
+        <div id="mobile-nav" class="hidden border-t border-stone-100 bg-white px-4 py-3 md:hidden"><a href="index.html"
+                class="block rounded-xl px-4 py-3 font-bold hover:bg-orange-50">Home</a><a href="menu.html"
+                class="block rounded-xl bg-orange-100 px-4 py-3 font-extrabold text-orange-800"
+                aria-current="page">Menu</a><a href="orders.html"
+                class="block rounded-xl px-4 py-3 font-bold hover:bg-orange-50">My
+                Orders</a><button type="button" data-future
+                class="block w-full rounded-xl px-4 py-3 text-left font-bold hover:bg-orange-50">Profile</button></div>
+    </header>
+    <main id="main-content" class="mx-auto max-w-7xl px-4 py-8 pb-28 sm:px-6 lg:px-8">
+        <section class="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+            <div>
+                <div
+                    class="inline-flex items-center gap-2 rounded-full bg-green-50 px-3 py-1.5 text-xs font-extrabold text-green-700">
+                    <span class="h-2 w-2 rounded-full bg-green-500"></span>Cafeteria Open</div>
+                <h1 class="mt-4 font-display text-4xl font-extrabold tracking-tight text-ink sm:text-5xl">Today's Menu
+                </h1>
+                <p class="mt-2 text-base text-stone-500 sm:text-lg">Fresh food. Student prices. Ready when you are.</p>
+            </div><span
+                class="inline-flex w-fit items-center gap-2 rounded-full border border-orange-200 bg-white px-3 py-2 text-sm font-bold text-orange-800">⚡
+                Pickup available <span class="text-stone-400">(mock)</span></span>
+        </section>
+        <section class="mt-8 rounded-3xl border border-orange-100 bg-white p-4 shadow-card sm:p-5"
+            aria-label="Search and filters">
+            <div class="flex flex-col gap-3 lg:flex-row">
+                <div class="relative flex-1"><label for="food-search" class="sr-only">Search food</label><span
+                        class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-stone-400">⌕</span><input
+                        id="food-search" type="search" placeholder="Search burgers, pizza, drinks..."
+                        class="focus-ring w-full rounded-2xl border border-stone-200 bg-stone-50 py-3.5 pl-11 pr-12 text-base outline-none placeholder:text-stone-400"><button
+                        id="clear-search" type="button"
+                        class="focus-ring absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-lg px-2 py-1 text-sm font-bold text-stone-500 hover:bg-stone-200"
+                        aria-label="Clear search">×</button></div>
+                <div class="grid grid-cols-3 gap-2 lg:flex"><label
+                        class="text-xs font-bold text-stone-500">Availability<select id="availability-filter"
+                            class="focus-ring mt-1 block w-full rounded-xl border border-stone-200 bg-white px-2 py-2 text-sm font-bold text-ink">
+                            <option value="all">All</option>
+                            <option value="available">Available</option>
+                            <option value="unavailable">Unavailable</option>
+                        </select></label><label class="text-xs font-bold text-stone-500">Dietary<select id="diet-filter"
+                            class="focus-ring mt-1 block w-full rounded-xl border border-stone-200 bg-white px-2 py-2 text-sm font-bold text-ink">
+                            <option value="all">All</option>
+                            <option value="vegetarian">Vegetarian</option>
+                        </select></label><label class="text-xs font-bold text-stone-500">Sort<select id="sort-filter"
+                            class="focus-ring mt-1 block w-full rounded-xl border border-stone-200 bg-white px-2 py-2 text-sm font-bold text-ink">
+                            <option value="recommended">Recommended</option>
+                            <option value="price-low">Price: Low to High</option>
+                            <option value="price-high">Price: High to Low</option>
+                            <option value="rating">Rating: High to Low</option>
+                            <option value="name">Name: A-Z</option>
+                        </select></label></div>
+            </div>
+            <div id="categories" class="mt-5 flex gap-2 overflow-x-auto pb-1" aria-label="Food categories"></div>
+        </section>
+        <section class="mt-8">
+            <div class="flex items-center justify-between">
+                <h2 class="font-display text-2xl font-extrabold text-ink">Choose your meal</h2>
+                <p id="result-count" class="text-sm font-bold text-stone-500"></p>
+            </div>
+            <div id="food-grid" class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4" aria-live="polite">
+                <div class="h-[350px] animate-pulse rounded-3xl bg-orange-100"></div>
+                <div class="h-[350px] animate-pulse rounded-3xl bg-orange-100"></div>
+                <div class="h-[350px] animate-pulse rounded-3xl bg-orange-100"></div>
+                <div class="h-[350px] animate-pulse rounded-3xl bg-orange-100"></div>
+            </div>
+        </section>
+    </main>
+    <aside id="cart-summary"
+        class="hidden fixed bottom-4 left-4 right-4 z-30 rounded-2xl bg-ink p-4 text-white shadow-2xl sm:left-auto sm:right-6 sm:w-80"
+        aria-live="polite">
+        <div class="flex items-center justify-between">
+            <p class="font-display text-lg font-bold"><span id="summary-count">0</span> items in cart</p>
+            <p id="summary-total" class="font-display text-xl font-extrabold text-orange-300">₹0</p>
+        </div><a href="cart.html" data-future
+            class="focus-ring mt-3 block rounded-xl bg-orange-600 px-4 py-3 text-center text-sm font-extrabold hover:bg-orange-700">View
+            Cart</a>
+    </aside>
+    <div id="modal" class="hidden fixed inset-0 z-50 items-center justify-center bg-ink/70 p-4" role="dialog"
+        aria-modal="true" aria-labelledby="modal-title">
+        <div id="modal-panel" class="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white shadow-2xl">
+        </div>
+    </div>
+    <div id="toast"
+        class="pointer-events-none fixed bottom-5 left-1/2 z-[60] hidden -translate-x-1/2 rounded-full bg-ink px-5 py-3 text-sm font-bold text-white shadow-xl"
+        role="status" aria-live="polite"></div>
+    <script src="js/menu.js"></script>
+</body>
+
+</html>

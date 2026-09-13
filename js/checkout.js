@@ -91,6 +91,12 @@ function bindEvents() {
     paymentMethod:  'payment-error',
   };
 
+  const radioFieldMap = {
+    pickupLocation: 'pickup-location',
+    pickupTime:     'pickup-time',
+    paymentMethod:  'payment',
+  };
+
   document.querySelectorAll('#checkout-form input[type=radio]').forEach(el => {
     el.addEventListener('change', () => {
       const errorId = radioErrorMap[el.name];
@@ -99,6 +105,14 @@ function bindEvents() {
         if (errorEl) {
           errorEl.textContent = '';
           errorEl.classList.add('hidden');
+        }
+      }
+      const fieldId = radioFieldMap[el.name];
+      if (fieldId) {
+        const fieldset = $(fieldId);
+        if (fieldset) {
+          fieldset.classList.remove('field-error');
+          fieldset.removeAttribute('aria-invalid');
         }
       }
     });

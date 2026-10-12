@@ -245,7 +245,7 @@ function orderCard(order) {
         </div>
         <div class="flex items-center gap-4 sm:flex-col sm:items-end sm:gap-2">
           <p class="font-display text-xl font-extrabold text-ink">${money(order.total)}</p>
-          <a href="admin-order-details.html?id=${encodeURIComponent(order.orderId)}"
+          <a href="admin-order-details.php?id=${encodeURIComponent(order.orderId)}"
              class="focus-ring rounded-xl bg-orange-600 px-4 py-2 text-sm font-extrabold text-white hover:bg-orange-700">
             View
           </a>

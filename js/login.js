@@ -71,12 +71,12 @@ document.addEventListener('DOMContentLoaded', () => {
       formStatus.textContent = 'Signed in as admin. Redirecting to dashboard…';
       formStatus.className = 'rounded-xl bg-green-50 px-3.5 py-3 text-sm font-bold text-green-800';
       localStorage.setItem('campusbite_role', 'admin');
-      window.setTimeout(() => { window.location.href = 'admin/admin-dashboard.html'; }, 850);
+      window.setTimeout(() => { window.location.href = 'admin/admin-dashboard.php'; }, 850);
     } else {
       formStatus.textContent = 'Signed in successfully. Taking you to today\'s menu…';
       formStatus.className = 'rounded-xl bg-green-50 px-3.5 py-3 text-sm font-bold text-green-800';
       localStorage.setItem('campusbite_role', 'student');
-      window.setTimeout(() => { window.location.href = 'menu.html'; }, 850);
+      window.setTimeout(() => { window.location.href = 'menu.php'; }, 850);
     }
   });
 });

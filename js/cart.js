@@ -194,11 +194,11 @@ function updateOrderSummary() {
           </div>
         </div>
       </dl>
-      <a href="checkout.html"
+      <a href="checkout.php"
          class="focus-ring mt-5 block rounded-xl bg-orange-600 px-4 py-3.5 text-center text-sm font-extrabold text-white hover:bg-orange-700">
         Proceed to Checkout
       </a>
-      <a href="menu.html"
+      <a href="menu.php"
          class="focus-ring mt-3 block rounded-xl border border-stone-200 px-4 py-3 text-center text-sm font-bold text-stone-600 hover:bg-orange-50">
         ← Continue Shopping
       </a>
@@ -210,7 +210,7 @@ function updateCartCount() {
   const n = cart.reduce((sum, x) => sum + x.quantity, 0);
   $('cart-count').textContent = n;
   $('item-count').textContent = n ? `${n} item${n === 1 ? '' : 's'}` : '';
-  document.querySelector('a[href="cart.html"]')
+  document.querySelector('a[href="cart.php"]')
     ?.setAttribute('aria-label', `View cart, ${n} items`);
 }
 
@@ -275,7 +275,7 @@ function handleEmptyCart() {
       <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-orange-100 text-4xl">🛒</div>
       <h2 class="mt-6 font-display text-2xl font-extrabold text-ink">Your cart is empty</h2>
       <p class="mt-3 text-stone-500">Looks like you haven't added anything yet. Explore today's cafeteria menu and find something delicious.</p>
-      <a href="menu.html"
+      <a href="menu.php"
          class="focus-ring mt-6 inline-block rounded-full bg-orange-600 px-6 py-3 text-sm font-extrabold text-white hover:bg-orange-700">
         Browse Menu
       </a>

@@ -189,7 +189,7 @@ function orderRow(order) {
           <p class="text-sm font-extrabold text-ink">${money(order.total)}</p>
           <p class="text-xs text-stone-400">${time}</p>
         </div>
-        <a href="admin-order-details.html?id=${encodeURIComponent(order.orderId)}"
+        <a href="admin-order-details.php?id=${encodeURIComponent(order.orderId)}"
            class="focus-ring rounded-lg bg-orange-600 px-3 py-1.5 text-xs font-extrabold text-white hover:bg-orange-700">
           View
         </a>

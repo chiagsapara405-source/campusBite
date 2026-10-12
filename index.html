@@ -10,13 +10,12 @@
     />
     <meta name="theme-color" content="#FFF7ED" />
 
-    <!-- Favicon (inline, no file needed) -->
     <link
       rel="icon"
       href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍔</text></svg>"
     />
 
-    <!-- Fonts: Bricolage Grotesque (headings) + Nunito Sans (body) -->
+    <!-- Fonts: Bebas Neue (hero / big type) + Bricolage Grotesque (headings) + Nunito Sans (body) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -24,19 +23,16 @@
       rel="stylesheet"
     />
 
-    <!-- Tailwind CSS Configuration (Defined before script for immediate configuration) -->
     <script>
       window.tailwind = window.tailwind || {};
       tailwind.config = {
         theme: {
           extend: {
-            colors: {
-              cream: "#FFF7ED", // warm page background
-              ink: "#201A15", // warm near-black for text & dark sections
-            },
+            colors: { cream: "#FFF7ED", ink: "#201A15" },
             fontFamily: {
               display: ['"Bricolage Grotesque"', "ui-sans-serif", "sans-serif"],
               body: ['"Nunito Sans"', "ui-sans-serif", "sans-serif"],
+              big: ['"Bebas Neue"', "Impact", "sans-serif"],
             },
             boxShadow: {
               card: "0 10px 30px -12px rgba(180, 83, 9, 0.16)",
@@ -48,21 +44,63 @@
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Small custom CSS: hamburger → X, mobile menu drop, navbar shadow, baseline typography -->
     <style>
-      /* Baseline colors before CDN compiles */
       body {
         background-color: #fff7ed;
         color: #201a15;
       }
-      .hero-tagline {
-        font-family: "Bebas Neue", sans-serif;
-      }
-      /* Keep dark surfaces readable even if the Tailwind CDN misses the custom ink token. */
       .bg-ink {
         background-color: #201a15;
       }
-      /* Hamburger icon morphs into an X (CSS transitions only — no GSAP here) */
+      ::selection {
+        background: #fed7aa;
+      }
+      .hero-tagline {
+        font-family: "Bebas Neue", Impact, sans-serif;
+        letter-spacing: 0.01em;
+      }
+      html.is-loading {
+        overflow: hidden;
+      }
+
+      /* ---------- Split text (built in js/script.js) ---------- */
+      .split-word {
+        display: inline-block;
+        overflow: hidden;
+        vertical-align: top;
+        padding: 0.08em 0.03em 0.04em;
+        margin: -0.08em -0.03em -0.04em;
+      }
+      .split-char {
+        display: inline-block;
+        will-change: transform;
+      }
+      .scrub-word {
+        display: inline-block;
+        will-change: opacity;
+      }
+
+      /* Outline type for the marquee */
+      .text-outline {
+        color: transparent;
+        -webkit-text-stroke: 2px currentColor;
+      }
+
+      /* ---------- Marquee ---------- */
+      @keyframes marquee-scroll {
+        from { transform: translateX(0); }
+        to   { transform: translateX(-50%); }
+      }
+      .marquee-track.is-animated {
+        animation: marquee-scroll 22s linear infinite;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .marquee-track.is-animated {
+          animation: none;
+        }
+      }
+
+      /* ---------- Navbar ---------- */
       #nav-toggle span {
         transition:
           transform 0.25s ease,
@@ -77,8 +115,6 @@
       #nav-toggle.open span:nth-child(3) {
         transform: translateY(-8px) rotate(-45deg);
       }
-
-      /* Mobile dropdown animation (CSS keyframes — GSAP is NOT used for the navbar) */
       #mobile-menu.open {
         animation: menu-drop 0.28s ease-out;
       }
@@ -92,30 +128,263 @@
           transform: translateY(0);
         }
       }
-
-      /* Navbar shadow appears only after scrolling */
       #site-header.is-scrolled {
         box-shadow: 0 12px 32px -16px rgba(124, 63, 14, 0.25);
       }
+      .nav-link.is-active {
+        background: #fff7ed;
+        color: #c2410c;
+      }
 
-      ::selection {
-        background: #fed7aa;
+      /* ---------- Custom cursor (fine pointers only) ---------- */
+      #cursor {
+        display: none;
+        position: fixed;
+        left: 0;
+        top: 0;
+        z-index: 200;
+        width: 34px;
+        height: 34px;
+        border: 2px solid #ea580c;
+        border-radius: 50%;
+        pointer-events: none;
+        place-items: center;
+        transition:
+          width 0.25s ease,
+          height 0.25s ease,
+          background 0.25s ease,
+          border-color 0.25s ease;
+      }
+      body.has-cursor #cursor {
+        display: grid;
+      }
+      #cursor.is-link {
+        width: 58px;
+        height: 58px;
+        background: rgba(234, 88, 12, 0.12);
+      }
+      #cursor.is-label {
+        width: 88px;
+        height: 88px;
+        background: #ea580c;
+      }
+      #cursor-label {
+        font:
+          800 12px/1 "Nunito Sans",
+          sans-serif;
+        color: #fff;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+      }
+      #cursor.is-label #cursor-label {
+        opacity: 1;
+      }
+
+      /* ---------- Menu list (hover preview) ---------- */
+      /* Hidden until JS adds .is-visible (the preview is populated on menu-row hover) */
+      #menu-preview {
+        display: none;
+      }
+      #menu-preview.is-visible {
+        display: block;
+      }
+      .row-thumb {
+        display: block;
+      }
+      .menu-row .menu-name {
+        transition:
+          transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1),
+          color 0.3s ease;
+      }
+      .menu-row:hover .menu-name,
+      .menu-row:focus-visible .menu-name {
+        transform: translateX(1rem);
+        color: #ea580c;
+      }
+      .menu-row .menu-arrow {
+        transition:
+          transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1),
+          background 0.3s ease,
+          color 0.3s ease;
+      }
+      .menu-row:hover .menu-arrow {
+        transform: rotate(-45deg);
+        background: #ea580c;
+        color: #fff;
+      }
+
+      /* ---------- Food cards ---------- */
+      .food-card {
+        transition: box-shadow 0.3s ease;
+        will-change: transform;
+      }
+      .food-card:hover {
+        box-shadow: 0 24px 48px -16px rgba(180, 83, 9, 0.28);
+      }
+      .zoom {
+        transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+      .food-card:hover .zoom {
+        transform: scale(1.06);
+      }
+      .tag {
+        position: absolute;
+        top: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        border-radius: 9999px;
+        background: rgba(255, 255, 255, 0.95);
+        padding: 0.25rem 0.7rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+      }
+      .tag .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #22c55e;
+      }
+      .btn-add {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        border-radius: 9999px;
+        background: #ea580c;
+        color: #fff;
+        padding: 0.65rem 1.25rem;
+        font-weight: 700;
+        font-size: 0.875rem;
+        transition:
+          background 0.2s ease,
+          transform 0.15s ease;
+      }
+      .btn-add:hover {
+        background: #c2410c;
+      }
+      .btn-add:active {
+        transform: scale(0.95);
+      }
+      .btn-add:focus-visible {
+        outline: 2px solid #ea580c;
+        outline-offset: 2px;
+      }
+
+      /* ---------- How it works ---------- */
+      .step-badge {
+        background: #ea580c;
+        color: #fff;
+      }
+
+      /* ---------- Cart fly-dot ---------- */
+      .fly-dot {
+        position: fixed;
+        left: -8px;
+        top: -8px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #ea580c;
+        z-index: 300;
+        pointer-events: none;
+        box-shadow: 0 0 0 4px rgba(234, 88, 12, 0.25);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        #preloader {
+          display: none !important;
+        }
+        html {
+          scroll-behavior: auto;
+        }
       }
     </style>
   </head>
 
   <body class="bg-cream font-body text-stone-700 antialiased">
-    <!-- Accessibility: skip straight to the content -->
-    <a
-      href="#home"
-      class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-full focus:bg-ink focus:px-5 focus:py-3 focus:text-sm focus:font-bold focus:text-white"
+    <!-- Scroll progress -->
+    <div
+      id="progress"
+      class="fixed left-0 top-0 z-[60] h-[3px] w-full bg-orange-600"
+      style="transform: scaleX(0); transform-origin: 0 50%"
+    ></div>
+
+    <!-- Custom cursor -->
+    <div id="cursor" aria-hidden="true"><span id="cursor-label"></span></div>
+
+    <!-- Hover preview used by the menu list -->
+    <div
+      id="menu-preview"
+      class="pointer-events-none fixed left-0 top-0 z-30 h-80 w-64 overflow-hidden rounded-3xl bg-orange-100 shadow-float"
+      aria-hidden="true"
     >
-      Skip to content
-    </a>
+      <img src="" alt="" class="h-full w-full object-cover" />
+    </div>
 
     <!-- ============================================================
-       NAVBAR (fixed) — links are placeholders for Phase 2 pages
-  ============================================================ -->
+       PRELOADER
+    ============================================================ -->
+    <div
+      id="preloader"
+      class="fixed inset-0 z-[100] bg-ink text-cream"
+      aria-hidden="true"
+    >
+      <div
+        class="pre-inner flex h-full w-full flex-col items-center justify-center"
+      >
+        <span
+          class="pre-logo flex h-20 w-20 items-center justify-center rounded-3xl bg-orange-600 shadow-float"
+        >
+          <svg class="h-12 w-12" viewBox="0 0 40 40" fill="#FFF7ED">
+            <path d="M8 17.5c0-4.7 5.4-7.5 12-7.5s12 2.8 12 7.5v1.2H8z" />
+            <circle cx="14" cy="13.6" r="1.2" fill="#EA580C" />
+            <circle cx="20" cy="12.2" r="1.2" fill="#EA580C" />
+            <circle cx="26" cy="13.6" r="1.2" fill="#EA580C" />
+            <rect x="8" y="21" width="24" height="2.6" rx="1.3" opacity=".7" />
+            <rect x="8" y="25.2" width="24" height="2.6" rx="1.3" />
+            <path d="M8 29.6h24v.9c0 2.6-5.4 4.5-12 4.5S8 33.1 8 30.5z" />
+          </svg>
+        </span>
+        <div class="mt-6 overflow-hidden">
+          <p class="pre-word font-display text-3xl font-extrabold">
+            Campus<span class="text-orange-500">Bite</span>
+          </p>
+        </div>
+        <div
+          class="absolute inset-x-6 bottom-6 flex items-end justify-between sm:inset-x-10 sm:bottom-8"
+        >
+          <p class="pb-3 text-sm font-bold text-stone-400">
+            Heating up the grill…
+          </p>
+          <p
+            id="pre-count"
+            class="hero-tagline text-[28vw] leading-[.8] text-cream sm:text-[16rem]"
+          >
+            0
+          </p>
+        </div>
+      </div>
+      <!-- curved trailing edge -->
+      <svg
+        class="absolute left-0 top-full h-[8vw] w-full"
+        viewBox="0 0 100 10"
+        preserveAspectRatio="none"
+        fill="#201A15"
+      >
+        <path d="M0 0H100Q50 12 0 0Z" />
+      </svg>
+    </div>
+
+    <a
+      href="#home"
+      class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[110] focus:rounded-full focus:bg-ink focus:px-5 focus:py-3 focus:text-sm focus:font-bold focus:text-white"
+      >Skip to content</a
+    >
+
+    <!-- ============================================================
+       NAVBAR
+    ============================================================ -->
     <header
       id="site-header"
       class="fixed inset-x-0 top-0 z-40 bg-white/90 backdrop-blur-md transition-shadow"
@@ -124,7 +393,6 @@
         class="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8"
         aria-label="Main navigation"
       >
-        <!-- Logo -->
         <a
           href="#home"
           id="nav-logo"
@@ -161,11 +429,11 @@
           >
         </a>
 
-        <!-- Desktop links -->
         <ul class="hidden items-center gap-1 lg:flex">
           <li>
             <a
               href="#home"
+              data-nav="home"
               class="nav-link rounded-full px-4 py-2 text-[15px] font-bold text-stone-600 transition-colors hover:bg-orange-50 hover:text-orange-700"
               >Home</a
             >
@@ -173,6 +441,7 @@
           <li>
             <a
               href="#menu"
+              data-nav="menu"
               class="nav-link rounded-full px-4 py-2 text-[15px] font-bold text-stone-600 transition-colors hover:bg-orange-50 hover:text-orange-700"
               >Menu</a
             >
@@ -180,6 +449,7 @@
           <li>
             <a
               href="#how-it-works"
+              data-nav="how-it-works"
               class="nav-link rounded-full px-4 py-2 text-[15px] font-bold text-stone-600 transition-colors hover:bg-orange-50 hover:text-orange-700"
               >How It Works</a
             >
@@ -187,6 +457,7 @@
           <li>
             <a
               href="#about"
+              data-nav="about"
               class="nav-link rounded-full px-4 py-2 text-[15px] font-bold text-stone-600 transition-colors hover:bg-orange-50 hover:text-orange-700"
               >About</a
             >
@@ -194,41 +465,72 @@
           <li>
             <a
               href="#contact"
+              data-nav="contact"
               class="nav-link rounded-full px-4 py-2 text-[15px] font-bold text-stone-600 transition-colors hover:bg-orange-50 hover:text-orange-700"
               >Contact</a
             >
           </li>
         </ul>
 
-        <!-- Desktop CTAs (Phase 2: login.html and register.html) -->
-        <div class="hidden items-center gap-3 lg:flex">
-          <a
-            href="login.html"
-            class="nav-action rounded-lg px-3 py-2 text-sm font-bold text-ink transition-colors hover:text-orange-700"
-            >Login</a
+        <div class="flex items-center gap-3">
+          <!-- Cart (front-end only for now; wire to PHP session in Phase 2) -->
+          <button
+            id="cart-btn"
+            type="button"
+            aria-label="Cart"
+            class="relative flex h-11 w-11 items-center justify-center rounded-xl border border-stone-200 bg-white text-ink transition-colors hover:border-orange-300 hover:text-orange-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-600"
           >
-          <a
-            href="register.html"
-            class="nav-action rounded-full bg-orange-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-orange-600/25 transition-all hover:bg-orange-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-600 focus-visible:ring-offset-2"
-            >Get Started</a
-          >
-        </div>
+            <svg
+              class="h-5 w-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+              <path d="M3 6h18" />
+              <path d="M16 10a4 4 0 0 1-8 0" />
+            </svg>
+            <span
+              id="cart-count"
+              class="absolute -right-1.5 -top-1.5 hidden h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-orange-600 px-1 text-[11px] font-extrabold text-white"
+              >0</span
+            >
+          </button>
 
-        <!-- Hamburger (mobile only) -->
-        <button
-          id="nav-toggle"
-          class="nav-action flex h-11 w-11 flex-col items-center justify-center gap-[6px] rounded-xl border border-stone-200 bg-white lg:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-600"
-          aria-expanded="false"
-          aria-controls="mobile-menu"
-          aria-label="Toggle navigation menu"
-        >
-          <span class="block h-[2px] w-6 rounded bg-ink"></span>
-          <span class="block h-[2px] w-6 rounded bg-ink"></span>
-          <span class="block h-[2px] w-6 rounded bg-ink"></span>
-        </button>
+          <div class="hidden items-center gap-3 lg:flex">
+            <a
+              href="login.php"
+              class="rounded-lg px-3 py-2 text-sm font-bold text-ink transition-colors hover:text-orange-700"
+              >Login</a
+            >
+            <span class="inline-block" data-magnetic="0.25">
+              <a
+                href="register.php"
+                data-cursor="Join"
+                class="inline-block rounded-full bg-orange-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-orange-600/25 transition-colors hover:bg-orange-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-600 focus-visible:ring-offset-2"
+                >Get Started</a
+              >
+            </span>
+          </div>
+
+          <button
+            id="nav-toggle"
+            class="flex h-11 w-11 flex-col items-center justify-center gap-[6px] rounded-xl border border-stone-200 bg-white lg:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-600"
+            aria-expanded="false"
+            aria-controls="mobile-menu"
+            aria-label="Toggle navigation menu"
+          >
+            <span class="block h-[2px] w-6 rounded bg-ink"></span>
+            <span class="block h-[2px] w-6 rounded bg-ink"></span>
+            <span class="block h-[2px] w-6 rounded bg-ink"></span>
+          </button>
+        </div>
       </nav>
 
-      <!-- Mobile dropdown menu -->
       <div
         id="mobile-menu"
         class="hidden lg:hidden mx-4 mb-4 rounded-2xl border border-stone-200 bg-white p-3 shadow-xl"
@@ -260,15 +562,14 @@
             >Contact</a
           >
         </nav>
-        <!-- Phase 2: these will become real pages -->
         <div class="mt-3 grid grid-cols-2 gap-3 border-t border-stone-100 pt-3">
           <a
-            href="login.html"
+            href="login.php"
             class="rounded-full border-2 border-stone-200 py-2.5 text-center text-sm font-bold text-ink transition-colors hover:border-orange-300 hover:text-orange-700"
             >Login</a
           >
           <a
-            href="register.html"
+            href="register.php"
             class="rounded-full bg-orange-600 py-2.5 text-center text-sm font-bold text-white transition-colors hover:bg-orange-700"
             >Get Started</a
           >
@@ -278,14 +579,14 @@
 
     <main>
       <!-- ============================================================
-         HERO — two columns on desktop, stacked on mobile
-    ============================================================ -->
-      <section id="home" class="scroll-mt-24">
+         HERO
+      ============================================================ -->
+      <section id="home" class="relative scroll-mt-24 overflow-x-clip">
         <div
-          class="mx-auto grid max-w-7xl items-center gap-14 px-4 pb-16 pt-28 sm:px-6 sm:pt-32 lg:grid-cols-2 lg:gap-10 lg:px-8 lg:pb-24 lg:pt-36"
+          class="mx-auto grid max-w-7xl items-center gap-14 px-4 pb-20 pt-28 sm:px-6 sm:pt-32 lg:grid-cols-[1.25fr_0.9fr] lg:gap-6 lg:px-8 lg:pb-28 lg:pt-36"
         >
-          <!-- Left: copy -->
-          <div class="max-w-xl">
+          <!-- Copy -->
+          <div id="hero-copy" class="relative z-10">
             <span
               id="hero-badge"
               class="inline-flex items-center gap-2.5 rounded-full border border-orange-200 bg-orange-50 px-4 py-1.5 text-[13px] font-bold text-orange-700"
@@ -298,86 +599,91 @@
                   class="relative inline-flex h-2 w-2 rounded-full bg-green-500"
                 ></span>
               </span>
-              College Cafeteria • Quick Pickup
+              College cafeteria · Quick pickup
             </span>
 
             <h1
-              class="hero-tagline mt-6 text-[5rem] leading-[1.06]  text-ink sm:text-6xl lg:text-[8rem]"
+              class="hero-tagline mt-6 text-[clamp(4.6rem,17vw,6.5rem)] leading-[.9] text-ink sm:text-[clamp(5rem,13vw,8rem)] lg:text-[clamp(6rem,9.6vw,9.75rem)]"
             >
-              <span class="hero-line block">GOOD <span class="text-orange-600">FOOD</span></span>
-              <span class="hero-line block">
-                <span class="relative inline-block"
-                  ><span class="text-orange-600">Less</span>  Waiting.
-                  <svg
-                    id="hero-underline"
-                    class="absolute bottom-0 left-0 h-3 w-full"
-                    viewBox="0 0 240 14"
-                    fill="none"
-                    preserveAspectRatio="none"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M4 10.5C58 4.2 118 3.4 172 6.6c22 1.3 44 1.9 64 1.7"
-                      class="stroke-orange-600"
-                      stroke-width="5"
-                      stroke-linecap="round"
-                      pathLength="1"
-                    />
-                  </svg>
-                </span>
+              <span class="block" data-split="chars" data-hero>GOOD FOOD</span>
+              <span class="relative block text-orange-600">
+                <span class="block" data-split="chars" data-hero
+                  >LESS WAITING.</span
+                >
+                <svg
+                  id="hero-underline"
+                  class="absolute -bottom-1 left-0 w-full"
+                  style="height: 0.1em"
+                  viewBox="0 0 240 14"
+                  fill="none"
+                  preserveAspectRatio="none"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M4 10.5C58 4.2 118 3.4 172 6.6c22 1.3 44 1.9 64 1.7"
+                    stroke="#201A15"
+                    stroke-width="5"
+                    stroke-linecap="round"
+                    pathLength="1"
+                  />
+                </svg>
               </span>
             </h1>
 
             <p
               id="hero-sub"
-              class="mt-6 text-lg leading-relaxed text-stone-600"
+              class="mt-8 max-w-md text-lg leading-relaxed text-stone-600"
             >
               Order your favorite college cafeteria meals online and pick them
               up when they're ready.
             </p>
 
             <div class="mt-8 flex flex-wrap items-center gap-4">
-              <a
-                href="#menu"
-                class="hero-btn group inline-flex items-center gap-2.5 rounded-full bg-orange-600 px-7 py-3.5 text-base font-bold text-white shadow-lg shadow-orange-600/25 transition-all duration-300 hover:bg-orange-700 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-600 focus-visible:ring-offset-2"
-              >
-                Browse Menu
-                <svg
-                  class="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
+              <span class="hero-btn-wrap inline-block" data-magnetic="0.3">
+                <a
+                  href="#menu"
+                  data-cursor="Eat"
+                  class="group inline-flex items-center gap-2.5 rounded-full bg-orange-600 px-7 py-3.5 text-base font-bold text-white shadow-lg shadow-orange-600/25 transition-colors duration-300 hover:bg-orange-700 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-600 focus-visible:ring-offset-2"
                 >
-                  <path d="M5 12h14" />
-                  <path d="M12 5l7 7-7 7" />
-                </svg>
-              </a>
-              <a
-                href="#how-it-works"
-                class="hero-btn inline-flex items-center gap-2.5 rounded-full border-2 border-stone-200 bg-white px-7 py-3.5 text-base font-bold text-ink transition-all duration-300 hover:border-orange-400 hover:text-orange-700 active:scale-95"
-              >
-                <svg
-                  class="h-5 w-5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
+                  Browse Menu
+                  <svg
+                    class="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M5 12h14" />
+                    <path d="M12 5l7 7-7 7" />
+                  </svg>
+                </a>
+              </span>
+              <span class="hero-btn-wrap inline-block" data-magnetic="0.3">
+                <a
+                  href="#how-it-works"
+                  class="inline-flex items-center gap-2.5 rounded-full border-2 border-stone-200 bg-white px-7 py-3.5 text-base font-bold text-ink transition-colors duration-300 hover:border-orange-400 hover:text-orange-700 active:scale-95"
                 >
-                  <circle cx="12" cy="12" r="9" />
-                  <path d="M10 8.6v6.8l5.6-3.4z" fill="currentColor" />
-                </svg>
-                How It Works
-              </a>
+                  <svg
+                    class="h-5 w-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M10 8.6v6.8l5.6-3.4z" fill="currentColor" />
+                  </svg>
+                  How It Works
+                </a>
+              </span>
             </div>
 
-            <!-- Trust / benefit indicators -->
             <ul class="mt-10 flex flex-wrap gap-x-8 gap-y-3">
               <li class="hero-benefit flex items-center gap-2.5">
                 <span
@@ -451,43 +757,26 @@
             </ul>
           </div>
 
-          <!-- Right: food composition -->
+          <!-- Visual -->
           <div
             id="hero-visual"
-            class="relative mx-auto w-full max-w-[420px] lg:max-w-[520px]"
+            class="relative mx-auto w-full max-w-[420px] lg:max-w-[500px]"
           >
-            <!-- Decorations -->
             <div
-              class="pointer-events-none absolute -bottom-10 -left-10 hidden h-40 w-40 rounded-full border-[3px] border-dashed border-orange-300/70 sm:block"
+              class="pointer-events-none absolute -bottom-10 -right-10 hidden h-40 w-40 rounded-full border-[3px] border-dashed border-orange-300/70 sm:block"
               aria-hidden="true"
             ></div>
-            <svg
-              class="pointer-events-none absolute -left-14 -top-10 hidden h-28 w-28 opacity-70 lg:block"
-              aria-hidden="true"
-            >
-              <defs>
-                <pattern
-                  id="hero-dots"
-                  width="16"
-                  height="16"
-                  patternUnits="userSpaceOnUse"
-                >
-                  <circle cx="2.5" cy="2.5" r="2.5" fill="#FDBA74" />
-                </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#hero-dots)" />
-            </svg>
 
-            <!-- Main dish card -->
             <div
+              id="hero-main"
+              data-depth="14"
               class="relative aspect-[4/5] overflow-hidden rounded-[2.5rem] bg-orange-100 shadow-float ring-1 ring-ink/5"
             >
               <img
+                class="hero-img h-full w-full object-cover"
                 src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=900&auto=format&fit=crop"
                 alt="Veg cheese burger with fresh lettuce and tomato on a sesame bun"
-                class="h-full w-full object-cover"
               />
-              <!-- Mini order card (shows what an "ordered item" looks like) -->
               <div
                 class="absolute inset-x-4 bottom-4 flex items-center gap-3 rounded-2xl bg-white/95 p-3 shadow-card"
               >
@@ -503,25 +792,16 @@
                   <p
                     class="mt-0.5 flex items-center gap-1.5 text-xs font-bold text-stone-500"
                   >
-                    <svg
-                      class="h-3.5 w-3.5 text-orange-500"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                      aria-hidden="true"
-                    >
-                      <path
-                        d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"
-                      />
-                    </svg>
-                    4.5
+                    <span class="text-orange-500" aria-hidden="true">★</span>4.5
                     <span class="text-stone-300" aria-hidden="true">•</span> ₹80
                   </p>
                 </div>
                 <button
                   type="button"
                   data-add-to-cart
+                  data-name="Veg Cheese Burger"
                   aria-label="Add Veg Cheese Burger to cart"
-                  class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-600 text-white transition-all hover:bg-orange-700 active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-600"
+                  class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-600 text-white transition-colors hover:bg-orange-700 active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-600"
                 >
                   <svg
                     class="h-5 w-5"
@@ -538,839 +818,949 @@
               </div>
             </div>
 
-            <!-- Floating card: French Fries -->
+            <!-- Floating cards (outer = mouse parallax, inner = idle float) -->
             <div
-              id="float-fries"
-              class="float-card absolute -left-4 top-14 z-10 flex items-center gap-3 rounded-2xl bg-white p-3 pr-5 shadow-float sm:-left-12"
+              class="float-card absolute -left-4 top-14 z-10 sm:-left-12"
+              data-depth="-34"
             >
-              <img
-                src="https://images.unsplash.com/photo-1573080496219-bb080dd4f877?q=80&w=400&auto=format&fit=crop"
-                alt="Crispy golden french fries"
-                class="h-12 w-12 rounded-xl object-cover"
-              />
-              <div>
-                <p class="text-sm font-bold text-ink">French Fries</p>
-                <p class="text-xs font-bold text-orange-600">₹60</p>
-              </div>
-            </div>
-
-            <!-- Floating card: Cold Coffee -->
-            <div
-              id="float-coffee"
-              class="float-card absolute -right-4 top-44 z-10 flex items-center gap-3 rounded-2xl bg-white p-3 pr-5 shadow-float sm:-right-12"
-            >
-              <img
-                src="https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?q=80&w=400&auto=format&fit=crop"
-                alt="Iced cold coffee in a tall glass"
-                class="h-12 w-12 rounded-xl object-cover"
-              />
-              <div>
-                <p class="text-sm font-bold text-ink">Cold Coffee</p>
-                <p class="text-xs font-bold text-orange-600">₹50</p>
-              </div>
-            </div>
-
-            <!-- Floating bubble: Pizza -->
-            <div
-              id="float-pizza"
-              class="float-card absolute -right-3 -top-5 z-10 flex flex-col items-center sm:-right-8"
-            >
-              <img
-                src="https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=300&auto=format&fit=crop"
-                alt="Margherita pizza"
-                class="h-16 w-16 rounded-full object-cover shadow-card ring-4 ring-white sm:h-20 sm:w-20"
-              />
-              <span
-                class="mt-1.5 rounded-full bg-white px-3 py-1 text-[11px] font-extrabold text-ink shadow-card"
-                >₹120</span
+              <div
+                class="float-inner flex items-center gap-3 rounded-2xl bg-white p-3 pr-5 shadow-float"
               >
+                <img
+                  src="https://images.unsplash.com/photo-1573080496219-bb080dd4f877?q=80&w=400&auto=format&fit=crop"
+                  alt="Crispy golden french fries"
+                  class="h-12 w-12 rounded-xl object-cover"
+                />
+                <div>
+                  <p class="text-sm font-bold text-ink">French Fries</p>
+                  <p class="text-xs font-bold text-orange-600">₹60</p>
+                </div>
+              </div>
+            </div>
+            <div
+              class="float-card absolute -right-4 top-44 z-10 sm:-right-12"
+              data-depth="38"
+            >
+              <div
+                class="float-inner flex items-center gap-3 rounded-2xl bg-white p-3 pr-5 shadow-float"
+              >
+                <img
+                  src="https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?q=80&w=400&auto=format&fit=crop"
+                  alt="Iced cold coffee in a tall glass"
+                  class="h-12 w-12 rounded-xl object-cover"
+                />
+                <div>
+                  <p class="text-sm font-bold text-ink">Cold Coffee</p>
+                  <p class="text-xs font-bold text-orange-600">₹50</p>
+                </div>
+              </div>
+            </div>
+            <div
+              class="float-card absolute -right-3 -top-5 z-10 sm:-right-8"
+              data-depth="-50"
+            >
+              <div class="float-inner flex flex-col items-center">
+                <img
+                  src="https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=300&auto=format&fit=crop"
+                  alt="Margherita pizza"
+                  class="h-16 w-16 rounded-full object-cover shadow-card ring-4 ring-white sm:h-20 sm:w-20"
+                />
+                <span
+                  class="mt-1.5 rounded-full bg-white px-3 py-1 text-[11px] font-extrabold text-ink shadow-card"
+                  >₹120</span
+                >
+              </div>
+            </div>
+
+            <!-- Rotating badge -->
+            <div
+              id="hero-badge-spin"
+              class="absolute -bottom-8 -left-5 z-20 h-28 w-28 sm:-left-14 sm:h-32 sm:w-32"
+              aria-hidden="true"
+            >
+              <svg id="spin-text" viewBox="0 0 120 120" class="h-full w-full">
+                <defs>
+                  <path
+                    id="circ"
+                    d="M60,60 m-44,0 a44,44 0 1,1 88,0 a44,44 0 1,1 -88,0"
+                  />
+                </defs>
+                <circle cx="60" cy="60" r="58" fill="#201A15" />
+                <text
+                  fill="#FFF7ED"
+                  font-size="9.5"
+                  font-weight="800"
+                  letter-spacing="1.4"
+                  font-family="Nunito Sans, sans-serif"
+                >
+                  <textPath
+                    href="#circ"
+                    textLength="272"
+                    lengthAdjust="spacing"
+                  >
+                    ORDER AHEAD • SKIP THE QUEUE • PICK UP •
+                  </textPath>
+                </text>
+              </svg>
+              <span class="absolute inset-0 flex items-center justify-center">
+                <span
+                  class="flex h-12 w-12 items-center justify-center rounded-full bg-orange-600 text-white"
+                >
+                  <svg
+                    class="h-6 w-6"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.4"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M7 17 17 7" />
+                    <path d="M8 7h9v9" />
+                  </svg>
+                </span>
+              </span>
             </div>
           </div>
         </div>
       </section>
 
       <!-- ============================================================
-         FOOD CATEGORIES
-    ============================================================ -->
-      <section id="menu" class="scroll-mt-24 bg-white py-20 sm:py-24">
+         MARQUEE
+      ============================================================ -->
+      <section
+        class="overflow-hidden bg-cream py-10"
+        aria-label="Menu highlights"
+      >
+        <div
+          class="marquee -rotate-1 scale-[1.04] overflow-hidden bg-orange-600 py-5 text-cream"
+        >
+          <div class="marquee-track flex w-max items-center whitespace-nowrap">
+            <span class="flex shrink-0 items-center gap-8 px-4"
+              ><span
+                class="hero-tagline text-[clamp(3.5rem,8vw,7rem)] leading-none"
+                >Burgers</span
+              ><svg
+                class="h-8 w-8 shrink-0 text-ink"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path
+                  d="M12 2l2.4 7.6L22 12l-7.6 2.4L12 22l-2.4-7.6L2 12l7.6-2.4z"
+                /></svg
+            ></span>
+            <span class="flex shrink-0 items-center gap-8 px-4"
+              ><span
+                class="hero-tagline text-outline text-[clamp(3.5rem,8vw,7rem)] leading-none"
+                >Masala Dosa</span
+              ><svg
+                class="h-8 w-8 shrink-0 text-ink"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path
+                  d="M12 2l2.4 7.6L22 12l-7.6 2.4L12 22l-2.4-7.6L2 12l7.6-2.4z"
+                /></svg
+            ></span>
+            <span class="flex shrink-0 items-center gap-8 px-4"
+              ><span
+                class="hero-tagline text-[clamp(3.5rem,8vw,7rem)] leading-none"
+                >Cold Coffee</span
+              ><svg
+                class="h-8 w-8 shrink-0 text-ink"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path
+                  d="M12 2l2.4 7.6L22 12l-7.6 2.4L12 22l-2.4-7.6L2 12l7.6-2.4z"
+                /></svg
+            ></span>
+            <span class="flex shrink-0 items-center gap-8 px-4"
+              ><span
+                class="hero-tagline text-outline text-[clamp(3.5rem,8vw,7rem)] leading-none"
+                >Pizza</span
+              ><svg
+                class="h-8 w-8 shrink-0 text-ink"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path
+                  d="M12 2l2.4 7.6L22 12l-7.6 2.4L12 22l-2.4-7.6L2 12l7.6-2.4z"
+                /></svg
+            ></span>
+            <span class="flex shrink-0 items-center gap-8 px-4"
+              ><span
+                class="hero-tagline text-[clamp(3.5rem,8vw,7rem)] leading-none"
+                >Paneer Wrap</span
+              ><svg
+                class="h-8 w-8 shrink-0 text-ink"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path
+                  d="M12 2l2.4 7.6L22 12l-7.6 2.4L12 22l-2.4-7.6L2 12l7.6-2.4z"
+                /></svg
+            ></span>
+            <span class="flex shrink-0 items-center gap-8 px-4"
+              ><span
+                class="hero-tagline text-outline text-[clamp(3.5rem,8vw,7rem)] leading-none"
+                >French Fries</span
+              ><svg
+                class="h-8 w-8 shrink-0 text-ink"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path
+                  d="M12 2l2.4 7.6L22 12l-7.6 2.4L12 22l-2.4-7.6L2 12l7.6-2.4z"
+                /></svg
+            ></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================
+         MENU LIST (hover preview on desktop)
+      ============================================================ -->
+      <section id="menu" class="scroll-mt-24 bg-cream py-20 sm:py-28">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div class="section-head mx-auto max-w-2xl text-center">
-            <span
-              class="inline-block rounded-full bg-orange-100 px-4 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.2em] text-orange-700"
-              >Today's Menu</span
-            >
+          <div class="max-w-2xl">
+            <p class="text-sm font-extrabold text-orange-700" data-fade>
+              Today's menu
+            </p>
             <h2
-              class="mt-4 font-display text-3xl font-extrabold tracking-tight text-ink sm:text-4xl"
+              class="mt-3 font-display text-4xl font-extrabold tracking-tight text-ink sm:text-5xl"
+              data-split="chars"
+              data-reveal
             >
               What are you craving?
             </h2>
-            <p class="mt-3 text-lg leading-relaxed text-stone-500">
+            <p class="mt-4 text-lg leading-relaxed text-stone-500" data-fade>
               Find something you'll love from today's cafeteria menu.
             </p>
           </div>
 
-          <div
-            id="categories-grid"
-            class="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5 lg:grid-cols-6"
-          >
-            <a
-              href="#favorites"
-              class="category-card group rounded-2xl border border-stone-200/80 bg-cream p-5 transition-all duration-300 hover:-translate-y-1.5 hover:border-orange-300 hover:bg-white hover:shadow-card"
-            >
-              <span
-                class="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-100 text-orange-700 transition-colors duration-300 group-hover:bg-orange-700 group-hover:text-white"
+          <ul id="menu-list" class="mt-14 border-b border-stone-200">
+            <li>
+              <a
+                href="#favorites"
+                class="menu-row group flex items-center gap-4 border-t border-stone-200 py-6 sm:gap-8 sm:py-8"
+                data-img="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=600&auto=format&fit=crop"
+                data-cursor="Browse"
               >
-                <svg
-                  class="h-6 w-6"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
+                <img
+                  class="row-thumb h-14 w-14 shrink-0 rounded-xl object-cover"
+                  src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=200&auto=format&fit=crop"
+                  alt=""
+                  loading="lazy"
+                />
+                <span
+                  class="menu-name hero-tagline text-[3.5rem] leading-none text-ink sm:text-7xl lg:text-8xl"
+                  >Burgers</span
                 >
-                  <path d="M4 9.5c0-3.2 3.6-5 8-5s8 1.8 8 5" />
-                  <path d="M9 7h.01M12 6.2h.01M15 7h.01" />
-                  <path d="M3.5 13h17M3.5 16.5h17" />
-                  <path d="M4 20c0 1.5 3.6 2.4 8 2.4s8-.9 8-2.4" />
-                </svg>
-              </span>
-              <h3 class="mt-4 font-display text-lg font-bold text-ink">
-                Burgers
-              </h3>
-              <p class="mt-1.5 text-[13px] leading-snug text-stone-500">
-                Freshly prepared burgers and sandwiches.
-              </p>
-            </a>
-
-            <a
-              href="#favorites"
-              class="category-card group rounded-2xl border border-stone-200/80 bg-cream p-5 transition-all duration-300 hover:-translate-y-1.5 hover:border-red-300 hover:bg-white hover:shadow-card"
-            >
-              <span
-                class="flex h-12 w-12 items-center justify-center rounded-xl bg-red-100 text-red-700 transition-colors duration-300 group-hover:bg-red-700 group-hover:text-white"
+                <span
+                  class="ml-auto hidden max-w-[15rem] text-sm leading-snug text-stone-500 md:block"
+                  >Freshly prepared burgers and sandwiches.</span
+                >
+                <span
+                  class="menu-arrow flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-stone-300 text-ink max-md:ml-auto"
+                  ><svg
+                    class="h-5 w-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12h14" />
+                    <path d="M12 5l7 7-7 7" /></svg
+                ></span>
+              </a>
+            </li>
+            <li>
+              <a
+                href="#favorites"
+                class="menu-row group flex items-center gap-4 border-t border-stone-200 py-6 sm:gap-8 sm:py-8"
+                data-img="https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=600&auto=format&fit=crop"
+                data-cursor="Browse"
               >
-                <svg
-                  class="h-6 w-6"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
+                <img
+                  class="row-thumb h-14 w-14 shrink-0 rounded-xl object-cover"
+                  src="https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=200&auto=format&fit=crop"
+                  alt=""
+                  loading="lazy"
+                />
+                <span
+                  class="menu-name hero-tagline text-[3.5rem] leading-none text-ink sm:text-7xl lg:text-8xl"
+                  >Pizza</span
                 >
-                  <path d="M12 20.8 5.4 6.6C8 5.2 16 5.2 18.6 6.6L12 20.8z" />
-                  <circle
-                    cx="12"
-                    cy="9.5"
-                    r="1.1"
-                    fill="currentColor"
-                    stroke="none"
-                  />
-                  <circle
-                    cx="9.4"
-                    cy="12.6"
-                    r="1.1"
-                    fill="currentColor"
-                    stroke="none"
-                  />
-                  <circle
-                    cx="14.6"
-                    cy="12.2"
-                    r="1.1"
-                    fill="currentColor"
-                    stroke="none"
-                  />
-                </svg>
-              </span>
-              <h3 class="mt-4 font-display text-lg font-bold text-ink">
-                Pizza
-              </h3>
-              <p class="mt-1.5 text-[13px] leading-snug text-stone-500">
-                Hot, cheesy slices and personal pizzas.
-              </p>
-            </a>
-
-            <a
-              href="#favorites"
-              class="category-card group rounded-2xl border border-stone-200/80 bg-cream p-5 transition-all duration-300 hover:-translate-y-1.5 hover:border-amber-300 hover:bg-white hover:shadow-card"
-            >
-              <span
-                class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-100 text-amber-700 transition-colors duration-300 group-hover:bg-amber-700 group-hover:text-white"
+                <span
+                  class="ml-auto hidden max-w-[15rem] text-sm leading-snug text-stone-500 md:block"
+                  >Hot, cheesy slices and personal pizzas.</span
+                >
+                <span
+                  class="menu-arrow flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-stone-300 text-ink max-md:ml-auto"
+                  ><svg
+                    class="h-5 w-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12h14" />
+                    <path d="M12 5l7 7-7 7" /></svg
+                ></span>
+              </a>
+            </li>
+            <li>
+              <a
+                href="#favorites"
+                class="menu-row group flex items-center gap-4 border-t border-stone-200 py-6 sm:gap-8 sm:py-8"
+                data-img="https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?q=80&w=600&auto=format&fit=crop"
+                data-cursor="Browse"
               >
-                <svg
-                  class="h-6 w-6"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
+                <img
+                  class="row-thumb h-14 w-14 shrink-0 rounded-xl object-cover"
+                  src="https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?q=80&w=200&auto=format&fit=crop"
+                  alt=""
+                  loading="lazy"
+                />
+                <span
+                  class="menu-name hero-tagline text-[3.5rem] leading-none text-ink sm:text-7xl lg:text-8xl"
+                  >Meals</span
                 >
-                  <path d="M4.5 11.5h15a7.5 7.5 0 0 1-15 0z" />
-                  <path d="M9.5 8.5c-.7-1 .7-2 0-3.2" />
-                  <path d="M14.5 8.5c-.7-1 .7-2 0-3.2" />
-                </svg>
-              </span>
-              <h3 class="mt-4 font-display text-lg font-bold text-ink">
-                Meals
-              </h3>
-              <p class="mt-1.5 text-[13px] leading-snug text-stone-500">
-                Rice, curries, and full thali plates.
-              </p>
-            </a>
-
-            <a
-              href="#favorites"
-              class="category-card group rounded-2xl border border-stone-200/80 bg-cream p-5 transition-all duration-300 hover:-translate-y-1.5 hover:border-yellow-300 hover:bg-white hover:shadow-card"
-            >
-              <span
-                class="flex h-12 w-12 items-center justify-center rounded-xl bg-yellow-100 text-yellow-700 transition-colors duration-300 group-hover:bg-yellow-700 group-hover:text-white"
+                <span
+                  class="ml-auto hidden max-w-[15rem] text-sm leading-snug text-stone-500 md:block"
+                  >Rice, curries, and full thali plates.</span
+                >
+                <span
+                  class="menu-arrow flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-stone-300 text-ink max-md:ml-auto"
+                  ><svg
+                    class="h-5 w-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12h14" />
+                    <path d="M12 5l7 7-7 7" /></svg
+                ></span>
+              </a>
+            </li>
+            <li>
+              <a
+                href="#favorites"
+                class="menu-row group flex items-center gap-4 border-t border-stone-200 py-6 sm:gap-8 sm:py-8"
+                data-img="https://images.unsplash.com/photo-1573080496219-bb080dd4f877?q=80&w=600&auto=format&fit=crop"
+                data-cursor="Browse"
               >
-                <svg
-                  class="h-6 w-6"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
+                <img
+                  class="row-thumb h-14 w-14 shrink-0 rounded-xl object-cover"
+                  src="https://images.unsplash.com/photo-1573080496219-bb080dd4f877?q=80&w=200&auto=format&fit=crop"
+                  alt=""
+                  loading="lazy"
+                />
+                <span
+                  class="menu-name hero-tagline text-[3.5rem] leading-none text-ink sm:text-7xl lg:text-8xl"
+                  >Snacks</span
                 >
-                  <circle cx="12" cy="12" r="8.3" />
-                  <circle
-                    cx="9"
-                    cy="9.8"
-                    r="1.1"
-                    fill="currentColor"
-                    stroke="none"
-                  />
-                  <circle
-                    cx="14.6"
-                    cy="9.2"
-                    r="1.1"
-                    fill="currentColor"
-                    stroke="none"
-                  />
-                  <circle
-                    cx="12"
-                    cy="13.8"
-                    r="1.1"
-                    fill="currentColor"
-                    stroke="none"
-                  />
-                  <circle
-                    cx="8.6"
-                    cy="14.6"
-                    r="1.1"
-                    fill="currentColor"
-                    stroke="none"
-                  />
-                </svg>
-              </span>
-              <h3 class="mt-4 font-display text-lg font-bold text-ink">
-                Snacks
-              </h3>
-              <p class="mt-1.5 text-[13px] leading-snug text-stone-500">
-                Samosas, fries, and quick bites.
-              </p>
-            </a>
-
-            <a
-              href="#favorites"
-              class="category-card group rounded-2xl border border-stone-200/80 bg-cream p-5 transition-all duration-300 hover:-translate-y-1.5 hover:border-teal-300 hover:bg-white hover:shadow-card"
-            >
-              <span
-                class="flex h-12 w-12 items-center justify-center rounded-xl bg-teal-100 text-teal-700 transition-colors duration-300 group-hover:bg-teal-700 group-hover:text-white"
+                <span
+                  class="ml-auto hidden max-w-[15rem] text-sm leading-snug text-stone-500 md:block"
+                  >Samosas, fries, and quick bites.</span
+                >
+                <span
+                  class="menu-arrow flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-stone-300 text-ink max-md:ml-auto"
+                  ><svg
+                    class="h-5 w-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12h14" />
+                    <path d="M12 5l7 7-7 7" /></svg
+                ></span>
+              </a>
+            </li>
+            <li>
+              <a
+                href="#favorites"
+                class="menu-row group flex items-center gap-4 border-t border-stone-200 py-6 sm:gap-8 sm:py-8"
+                data-img="https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?q=80&w=600&auto=format&fit=crop"
+                data-cursor="Browse"
               >
-                <svg
-                  class="h-6 w-6"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
+                <img
+                  class="row-thumb h-14 w-14 shrink-0 rounded-xl object-cover"
+                  src="https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?q=80&w=200&auto=format&fit=crop"
+                  alt=""
+                  loading="lazy"
+                />
+                <span
+                  class="menu-name hero-tagline text-[3.5rem] leading-none text-ink sm:text-7xl lg:text-8xl"
+                  >Drinks</span
                 >
-                  <path
-                    d="M7 6h10l-1.2 13.9a1.6 1.6 0 0 1-1.6 1.5h-4.4a1.6 1.6 0 0 1-1.6-1.5z"
-                  />
-                  <path d="M11.5 6V3.2l3-1.7" />
-                </svg>
-              </span>
-              <h3 class="mt-4 font-display text-lg font-bold text-ink">
-                Drinks
-              </h3>
-              <p class="mt-1.5 text-[13px] leading-snug text-stone-500">
-                Cold coffees, juices, and shakes.
-              </p>
-            </a>
-
-            <a
-              href="#favorites"
-              class="category-card group rounded-2xl border border-stone-200/80 bg-cream p-5 transition-all duration-300 hover:-translate-y-1.5 hover:border-pink-300 hover:bg-white hover:shadow-card"
-            >
-              <span
-                class="flex h-12 w-12 items-center justify-center rounded-xl bg-pink-100 text-pink-700 transition-colors duration-300 group-hover:bg-pink-700 group-hover:text-white"
+                <span
+                  class="ml-auto hidden max-w-[15rem] text-sm leading-snug text-stone-500 md:block"
+                  >Cold coffees, juices, and shakes.</span
+                >
+                <span
+                  class="menu-arrow flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-stone-300 text-ink max-md:ml-auto"
+                  ><svg
+                    class="h-5 w-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12h14" />
+                    <path d="M12 5l7 7-7 7" /></svg
+                ></span>
+              </a>
+            </li>
+            <li>
+              <a
+                href="#favorites"
+                class="menu-row group flex items-center gap-4 border-t border-stone-200 py-6 sm:gap-8 sm:py-8"
+                data-img="https://images.unsplash.com/photo-1551024601-bec78aea704b?q=80&w=600&auto=format&fit=crop"
+                data-cursor="Browse"
               >
-                <svg
-                  class="h-6 w-6"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
+                <img
+                  class="row-thumb h-14 w-14 shrink-0 rounded-xl bg-orange-100 object-cover"
+                  src="https://images.unsplash.com/photo-1551024601-bec78aea704b?q=80&w=200&auto=format&fit=crop"
+                  alt=""
+                  loading="lazy"
+                  onerror="this.style.visibility = 'hidden'"
+                />
+                <span
+                  class="menu-name hero-tagline text-[3.5rem] leading-none text-ink sm:text-7xl lg:text-8xl"
+                  >Desserts</span
                 >
-                  <path
-                    d="M9 11.2c-2.1 0-3.2-1.5-3.2-3.1 0-1.5 1-2.8 2.4-3.1C8.5 3 10.1 1.6 12 1.6s3.5 1.4 3.8 3.4c1.4.3 2.4 1.6 2.4 3.1 0 1.6-1.1 3.1-3.2 3.1z"
-                  />
-                  <path d="M9.2 11.2 12 20.6l2.8-9.4" />
-                </svg>
-              </span>
-              <h3 class="mt-4 font-display text-lg font-bold text-ink">
-                Desserts
-              </h3>
-              <p class="mt-1.5 text-[13px] leading-snug text-stone-500">
-                Cakes, brownies, and sweets.
-              </p>
-            </a>
-          </div>
+                <span
+                  class="ml-auto hidden max-w-[15rem] text-sm leading-snug text-stone-500 md:block"
+                  >Cakes, brownies, and sweets.</span
+                >
+                <span
+                  class="menu-arrow flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-stone-300 text-ink max-md:ml-auto"
+                  ><svg
+                    class="h-5 w-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12h14" />
+                    <path d="M12 5l7 7-7 7" /></svg
+                ></span>
+              </a>
+            </li>
+          </ul>
         </div>
       </section>
 
       <!-- ============================================================
          STUDENT FAVORITES
-    ============================================================ -->
-      <section id="favorites" class="scroll-mt-24 bg-cream py-20 sm:py-24">
+      ============================================================ -->
+      <section id="favorites" class="scroll-mt-24 bg-white py-20 sm:py-28">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div
-            class="section-head flex flex-col gap-6 md:flex-row md:items-end md:justify-between"
+            class="flex flex-col gap-6 md:flex-row md:items-end md:justify-between"
           >
             <div class="max-w-xl">
-              <span
-                class="inline-block rounded-full bg-orange-100 px-4 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.2em] text-orange-700"
-                >Most Ordered</span
-              >
+              <p class="text-sm font-extrabold text-orange-700" data-fade>
+                Most ordered
+              </p>
               <h2
-                class="mt-4 font-display text-3xl font-extrabold tracking-tight text-ink sm:text-4xl"
+                class="mt-3 font-display text-4xl font-extrabold tracking-tight text-ink sm:text-5xl"
+                data-split="chars"
+                data-reveal
               >
                 Student Favorites
               </h2>
-              <p class="mt-3 text-lg leading-relaxed text-stone-500">
+              <p class="mt-4 text-lg leading-relaxed text-stone-500" data-fade>
                 The food students keep coming back for.
               </p>
             </div>
-            <!-- Phase 2: point this to menu.html -->
-            <a
-              href="menu.html"
-              class="group inline-flex shrink-0 self-start items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-ink shadow-card ring-1 ring-stone-900/5 transition-all hover:-translate-y-0.5 hover:text-orange-700 md:self-auto"
+            <span
+              class="inline-block self-start md:self-auto"
+              data-magnetic="0.25"
             >
-              View Full Menu
-              <svg
-                class="h-4 w-4 transition-transform group-hover:translate-x-0.5"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
+              <a
+                href="menu.php"
+                data-cursor="Menu"
+                class="group inline-flex shrink-0 items-center gap-2 rounded-full bg-cream px-6 py-3 text-sm font-bold text-ink ring-1 ring-stone-900/10 transition-colors hover:text-orange-700"
               >
-                <path d="M5 12h14" />
-                <path d="M12 5l7 7-7 7" />
-              </svg>
-            </a>
+                View Full Menu
+                <svg
+                  class="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M5 12h14" />
+                  <path d="M12 5l7 7-7 7" />
+                </svg>
+              </a>
+            </span>
           </div>
 
           <div
             id="favorites-grid"
-            class="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+            class="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
           >
-            <!-- Card 1 -->
-            <article
-              class="food-card group flex flex-col overflow-hidden rounded-3xl bg-white shadow-card ring-1 ring-stone-900/5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-float"
-            >
-              <div class="relative aspect-[4/3] overflow-hidden bg-orange-50">
-                <img
-                  src="https://images.unsplash.com/photo-1571091718767-18b5b1457add?q=80&w=700&auto=format&fit=crop"
-                  alt="Veg cheese burger served with fries"
-                  class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  loading="lazy"
-                />
-                <span
-                  class="absolute left-3.5 top-3.5 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1 text-[11px] font-bold text-green-700 shadow-sm"
-                  ><span class="h-1.5 w-1.5 rounded-full bg-green-500"></span
-                  >Veg</span
-                >
-                <span
-                  class="absolute right-3.5 top-3.5 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-xs font-bold text-ink shadow-sm"
-                >
-                  <svg
-                    class="h-3.5 w-3.5 text-orange-500"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    aria-hidden="true"
+            <!-- 1 -->
+            <div class="food-reveal">
+              <article
+                class="food-card flex h-full flex-col overflow-hidden rounded-3xl bg-cream shadow-card ring-1 ring-stone-900/5"
+              >
+                <div class="relative aspect-[4/3] overflow-hidden bg-orange-50">
+                  <div class="zoom h-full w-full">
+                    <img
+                      src="https://images.unsplash.com/photo-1571091718767-18b5b1457add?q=80&w=700&auto=format&fit=crop"
+                      alt="Veg cheese burger served with fries"
+                      class="food-img h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                  <span class="tag left-3.5 text-green-700"
+                    ><i class="dot"></i>Veg</span
                   >
-                    <path
-                      d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"
-                    /></svg
-                  >4.5
-                </span>
-              </div>
-              <div class="flex flex-1 flex-col p-5">
-                <h3 class="font-display text-lg font-bold text-ink">
-                  Veg Cheese Burger
-                </h3>
-                <p class="mt-1 text-sm leading-relaxed text-stone-500">
-                  Crispy veg patty with melted cheese and fresh veggies in a
-                  toasted bun.
-                </p>
-                <div class="mt-auto flex items-center justify-between pt-4">
-                  <p class="font-display text-xl font-extrabold text-ink">
-                    ₹80
-                  </p>
-                  <button
-                    type="button"
-                    data-add-to-cart
-                    class="inline-flex items-center gap-1.5 rounded-full bg-orange-600 px-5 py-2.5 text-sm font-bold text-white transition-all duration-200 hover:bg-orange-700 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-600 focus-visible:ring-offset-2"
+                  <span class="tag right-3.5 text-ink"
+                    ><span class="text-orange-500">★</span>4.5</span
                   >
-                    <svg
-                      class="h-4 w-4"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2.5"
-                      stroke-linecap="round"
-                      aria-hidden="true"
-                    >
-                      <path d="M12 5v14M5 12h14" />
-                    </svg>
-                    Add to Cart
-                  </button>
                 </div>
-              </div>
-            </article>
-
-            <!-- Card 2 -->
-            <article
-              class="food-card group flex flex-col overflow-hidden rounded-3xl bg-white shadow-card ring-1 ring-stone-900/5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-float"
-            >
-              <div class="relative aspect-[4/3] overflow-hidden bg-orange-50">
-                <img
-                  src="https://images.unsplash.com/photo-1626700051175-6818013e1d4f?auto=format&fit=crop&w=700&q=80"
-                  alt="Paneer wrap rolled in a soft tortilla"
-                  class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  loading="lazy"
-                />
-                <span
-                  class="absolute left-3.5 top-3.5 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1 text-[11px] font-bold text-green-700 shadow-sm"
-                  ><span class="h-1.5 w-1.5 rounded-full bg-green-500"></span
-                  >Veg</span
-                >
-                <span
-                  class="absolute right-3.5 top-3.5 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-xs font-bold text-ink shadow-sm"
-                >
-                  <svg
-                    class="h-3.5 w-3.5 text-orange-500"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"
-                    /></svg
-                  >4.4
-                </span>
-              </div>
-              <div class="flex flex-1 flex-col p-5">
-                <h3 class="font-display text-lg font-bold text-ink">
-                  Paneer Wrap
-                </h3>
-                <p class="mt-1 text-sm leading-relaxed text-stone-500">
-                  Spiced paneer cubes rolled in a soft roti with mint chutney.
-                </p>
-                <div class="mt-auto flex items-center justify-between pt-4">
-                  <p class="font-display text-xl font-extrabold text-ink">
-                    ₹70
+                <div class="flex flex-1 flex-col p-5">
+                  <h3 class="font-display text-lg font-bold text-ink">
+                    Veg Cheese Burger
+                  </h3>
+                  <p class="mt-1 text-sm leading-relaxed text-stone-500">
+                    Crispy veg patty with melted cheese and fresh veggies in a
+                    toasted bun.
                   </p>
-                  <button
-                    type="button"
-                    data-add-to-cart
-                    class="inline-flex items-center gap-1.5 rounded-full bg-orange-600 px-5 py-2.5 text-sm font-bold text-white transition-all duration-200 hover:bg-orange-700 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-600 focus-visible:ring-offset-2"
-                  >
-                    <svg
-                      class="h-4 w-4"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2.5"
-                      stroke-linecap="round"
-                      aria-hidden="true"
+                  <div class="mt-auto flex items-center justify-between pt-4">
+                    <p class="font-display text-xl font-extrabold text-ink">
+                      ₹80
+                    </p>
+                    <button
+                      type="button"
+                      data-add-to-cart
+                      data-name="Veg Cheese Burger"
+                      class="btn-add"
                     >
-                      <path d="M12 5v14M5 12h14" />
-                    </svg>
-                    Add to Cart
-                  </button>
+                      <svg
+                        class="h-4 w-4"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M12 5v14M5 12h14" /></svg
+                      >Add to Cart
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </article>
-
-            <!-- Card 3 -->
-            <article
-              class="food-card group flex flex-col overflow-hidden rounded-3xl bg-white shadow-card ring-1 ring-stone-900/5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-float"
-            >
-              <div class="relative aspect-[4/3] overflow-hidden bg-orange-50">
-                <img
-                  src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=700&auto=format&fit=crop"
-                  alt="Margherita pizza topped with cheese and basil"
-                  class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  loading="lazy"
-                />
-                <span
-                  class="absolute left-3.5 top-3.5 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1 text-[11px] font-bold text-green-700 shadow-sm"
-                  ><span class="h-1.5 w-1.5 rounded-full bg-green-500"></span
-                  >Veg</span
-                >
-                <span
-                  class="absolute right-3.5 top-3.5 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-xs font-bold text-ink shadow-sm"
-                >
-                  <svg
-                    class="h-3.5 w-3.5 text-orange-500"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    aria-hidden="true"
+              </article>
+            </div>
+            <!-- 2 -->
+            <div class="food-reveal">
+              <article
+                class="food-card flex h-full flex-col overflow-hidden rounded-3xl bg-cream shadow-card ring-1 ring-stone-900/5"
+              >
+                <div class="relative aspect-[4/3] overflow-hidden bg-orange-50">
+                  <div class="zoom h-full w-full">
+                    <img
+                      src="https://images.unsplash.com/photo-1626700051175-6818013e1d4f?auto=format&fit=crop&w=700&q=80"
+                      alt="Paneer wrap rolled in a soft tortilla"
+                      class="food-img h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                  <span class="tag left-3.5 text-green-700"
+                    ><i class="dot"></i>Veg</span
                   >
-                    <path
-                      d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"
-                    /></svg
-                  >4.6
-                </span>
-              </div>
-              <div class="flex flex-1 flex-col p-5">
-                <h3 class="font-display text-lg font-bold text-ink">
-                  Margherita Pizza
-                </h3>
-                <p class="mt-1 text-sm leading-relaxed text-stone-500">
-                  Hand-stretched base topped with mozzarella and fresh basil.
-                </p>
-                <div class="mt-auto flex items-center justify-between pt-4">
-                  <p class="font-display text-xl font-extrabold text-ink">
-                    ₹120
+                  <span class="tag right-3.5 text-ink"
+                    ><span class="text-orange-500">★</span>4.4</span
+                  >
+                </div>
+                <div class="flex flex-1 flex-col p-5">
+                  <h3 class="font-display text-lg font-bold text-ink">
+                    Paneer Wrap
+                  </h3>
+                  <p class="mt-1 text-sm leading-relaxed text-stone-500">
+                    Spiced paneer cubes rolled in a soft roti with mint chutney.
                   </p>
-                  <button
-                    type="button"
-                    data-add-to-cart
-                    class="inline-flex items-center gap-1.5 rounded-full bg-orange-600 px-5 py-2.5 text-sm font-bold text-white transition-all duration-200 hover:bg-orange-700 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-600 focus-visible:ring-offset-2"
-                  >
-                    <svg
-                      class="h-4 w-4"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2.5"
-                      stroke-linecap="round"
-                      aria-hidden="true"
+                  <div class="mt-auto flex items-center justify-between pt-4">
+                    <p class="font-display text-xl font-extrabold text-ink">
+                      ₹70
+                    </p>
+                    <button
+                      type="button"
+                      data-add-to-cart
+                      data-name="Paneer Wrap"
+                      class="btn-add"
                     >
-                      <path d="M12 5v14M5 12h14" />
-                    </svg>
-                    Add to Cart
-                  </button>
+                      <svg
+                        class="h-4 w-4"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M12 5v14M5 12h14" /></svg
+                      >Add to Cart
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </article>
-
-            <!-- Card 4 -->
-            <article
-              class="food-card group flex flex-col overflow-hidden rounded-3xl bg-white shadow-card ring-1 ring-stone-900/5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-float"
-            >
-              <div class="relative aspect-[4/3] overflow-hidden bg-orange-50">
-                <img
-                  src="https://images.unsplash.com/photo-1630383249896-424e482df921?q=80&w=700&auto=format&fit=crop"
-                  alt="Crispy masala dosa with chutney"
-                  class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  loading="lazy"
-                />
-                <span
-                  class="absolute left-3.5 top-3.5 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1 text-[11px] font-bold text-green-700 shadow-sm"
-                  ><span class="h-1.5 w-1.5 rounded-full bg-green-500"></span
-                  >Veg</span
-                >
-                <span
-                  class="absolute right-3.5 top-3.5 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-xs font-bold text-ink shadow-sm"
-                >
-                  <svg
-                    class="h-3.5 w-3.5 text-orange-500"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    aria-hidden="true"
+              </article>
+            </div>
+            <!-- 3 -->
+            <div class="food-reveal">
+              <article
+                class="food-card flex h-full flex-col overflow-hidden rounded-3xl bg-cream shadow-card ring-1 ring-stone-900/5"
+              >
+                <div class="relative aspect-[4/3] overflow-hidden bg-orange-50">
+                  <div class="zoom h-full w-full">
+                    <img
+                      src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=700&auto=format&fit=crop"
+                      alt="Margherita pizza topped with cheese and basil"
+                      class="food-img h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                  <span class="tag left-3.5 text-green-700"
+                    ><i class="dot"></i>Veg</span
                   >
-                    <path
-                      d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"
-                    /></svg
-                  >4.7
-                </span>
-              </div>
-              <div class="flex flex-1 flex-col p-5">
-                <h3 class="font-display text-lg font-bold text-ink">
-                  Masala Dosa
-                </h3>
-                <p class="mt-1 text-sm leading-relaxed text-stone-500">
-                  Golden crispy dosa with potato masala, sambar, and chutney.
-                </p>
-                <div class="mt-auto flex items-center justify-between pt-4">
-                  <p class="font-display text-xl font-extrabold text-ink">
-                    ₹60
+                  <span class="tag right-3.5 text-ink"
+                    ><span class="text-orange-500">★</span>4.6</span
+                  >
+                </div>
+                <div class="flex flex-1 flex-col p-5">
+                  <h3 class="font-display text-lg font-bold text-ink">
+                    Margherita Pizza
+                  </h3>
+                  <p class="mt-1 text-sm leading-relaxed text-stone-500">
+                    Hand-stretched base topped with mozzarella and fresh basil.
                   </p>
-                  <button
-                    type="button"
-                    data-add-to-cart
-                    class="inline-flex items-center gap-1.5 rounded-full bg-orange-600 px-5 py-2.5 text-sm font-bold text-white transition-all duration-200 hover:bg-orange-700 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-600 focus-visible:ring-offset-2"
-                  >
-                    <svg
-                      class="h-4 w-4"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2.5"
-                      stroke-linecap="round"
-                      aria-hidden="true"
+                  <div class="mt-auto flex items-center justify-between pt-4">
+                    <p class="font-display text-xl font-extrabold text-ink">
+                      ₹120
+                    </p>
+                    <button
+                      type="button"
+                      data-add-to-cart
+                      data-name="Margherita Pizza"
+                      class="btn-add"
                     >
-                      <path d="M12 5v14M5 12h14" />
-                    </svg>
-                    Add to Cart
-                  </button>
+                      <svg
+                        class="h-4 w-4"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M12 5v14M5 12h14" /></svg
+                      >Add to Cart
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </article>
-
-            <!-- Card 5 -->
-            <article
-              class="food-card group flex flex-col overflow-hidden rounded-3xl bg-white shadow-card ring-1 ring-stone-900/5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-float"
-            >
-              <div class="relative aspect-[4/3] overflow-hidden bg-orange-50">
-                <img
-                  src="https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?q=80&w=700&auto=format&fit=crop"
-                  alt="Frothy iced cold coffee in a glass"
-                  class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  loading="lazy"
-                />
-                <span
-                  class="absolute left-3.5 top-3.5 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1 text-[11px] font-bold text-green-700 shadow-sm"
-                  ><span class="h-1.5 w-1.5 rounded-full bg-green-500"></span
-                  >Veg</span
-                >
-                <span
-                  class="absolute right-3.5 top-3.5 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-xs font-bold text-ink shadow-sm"
-                >
-                  <svg
-                    class="h-3.5 w-3.5 text-orange-500"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    aria-hidden="true"
+              </article>
+            </div>
+            <!-- 4 -->
+            <div class="food-reveal">
+              <article
+                class="food-card flex h-full flex-col overflow-hidden rounded-3xl bg-cream shadow-card ring-1 ring-stone-900/5"
+              >
+                <div class="relative aspect-[4/3] overflow-hidden bg-orange-50">
+                  <div class="zoom h-full w-full">
+                    <img
+                      src="https://images.unsplash.com/photo-1630383249896-424e482df921?q=80&w=700&auto=format&fit=crop"
+                      alt="Crispy masala dosa with chutney"
+                      class="food-img h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                  <span class="tag left-3.5 text-green-700"
+                    ><i class="dot"></i>Veg</span
                   >
-                    <path
-                      d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"
-                    /></svg
-                  >4.5
-                </span>
-              </div>
-              <div class="flex flex-1 flex-col p-5">
-                <h3 class="font-display text-lg font-bold text-ink">
-                  Cold Coffee
-                </h3>
-                <p class="mt-1 text-sm leading-relaxed text-stone-500">
-                  Chilled and frothy blended coffee with milk and ice.
-                </p>
-                <div class="mt-auto flex items-center justify-between pt-4">
-                  <p class="font-display text-xl font-extrabold text-ink">
-                    ₹50
+                  <span class="tag right-3.5 text-ink"
+                    ><span class="text-orange-500">★</span>4.7</span
+                  >
+                </div>
+                <div class="flex flex-1 flex-col p-5">
+                  <h3 class="font-display text-lg font-bold text-ink">
+                    Masala Dosa
+                  </h3>
+                  <p class="mt-1 text-sm leading-relaxed text-stone-500">
+                    Golden crispy dosa with potato masala, sambar, and chutney.
                   </p>
-                  <button
-                    type="button"
-                    data-add-to-cart
-                    class="inline-flex items-center gap-1.5 rounded-full bg-orange-600 px-5 py-2.5 text-sm font-bold text-white transition-all duration-200 hover:bg-orange-700 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-600 focus-visible:ring-offset-2"
-                  >
-                    <svg
-                      class="h-4 w-4"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2.5"
-                      stroke-linecap="round"
-                      aria-hidden="true"
+                  <div class="mt-auto flex items-center justify-between pt-4">
+                    <p class="font-display text-xl font-extrabold text-ink">
+                      ₹60
+                    </p>
+                    <button
+                      type="button"
+                      data-add-to-cart
+                      data-name="Masala Dosa"
+                      class="btn-add"
                     >
-                      <path d="M12 5v14M5 12h14" />
-                    </svg>
-                    Add to Cart
-                  </button>
+                      <svg
+                        class="h-4 w-4"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M12 5v14M5 12h14" /></svg
+                      >Add to Cart
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </article>
-
-            <!-- Card 6 -->
-            <article
-              class="food-card group flex flex-col overflow-hidden rounded-3xl bg-white shadow-card ring-1 ring-stone-900/5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-float"
-            >
-              <div class="relative aspect-[4/3] overflow-hidden bg-orange-50">
-                <img
-                  src="https://images.unsplash.com/photo-1573080496219-bb080dd4f877?q=80&w=700&auto=format&fit=crop"
-                  alt="Golden salted french fries"
-                  class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  loading="lazy"
-                />
-                <span
-                  class="absolute left-3.5 top-3.5 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1 text-[11px] font-bold text-green-700 shadow-sm"
-                  ><span class="h-1.5 w-1.5 rounded-full bg-green-500"></span
-                  >Veg</span
-                >
-                <span
-                  class="absolute right-3.5 top-3.5 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-xs font-bold text-ink shadow-sm"
-                >
-                  <svg
-                    class="h-3.5 w-3.5 text-orange-500"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    aria-hidden="true"
+              </article>
+            </div>
+            <!-- 5 -->
+            <div class="food-reveal">
+              <article
+                class="food-card flex h-full flex-col overflow-hidden rounded-3xl bg-cream shadow-card ring-1 ring-stone-900/5"
+              >
+                <div class="relative aspect-[4/3] overflow-hidden bg-orange-50">
+                  <div class="zoom h-full w-full">
+                    <img
+                      src="https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?q=80&w=700&auto=format&fit=crop"
+                      alt="Frothy iced cold coffee in a glass"
+                      class="food-img h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                  <span class="tag left-3.5 text-green-700"
+                    ><i class="dot"></i>Veg</span
                   >
-                    <path
-                      d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"
-                    /></svg
-                  >4.3
-                </span>
-              </div>
-              <div class="flex flex-1 flex-col p-5">
-                <h3 class="font-display text-lg font-bold text-ink">
-                  French Fries
-                </h3>
-                <p class="mt-1 text-sm leading-relaxed text-stone-500">
-                  Golden salted fries served with a ketchup dip.
-                </p>
-                <div class="mt-auto flex items-center justify-between pt-4">
-                  <p class="font-display text-xl font-extrabold text-ink">
-                    ₹60
+                  <span class="tag right-3.5 text-ink"
+                    ><span class="text-orange-500">★</span>4.5</span
+                  >
+                </div>
+                <div class="flex flex-1 flex-col p-5">
+                  <h3 class="font-display text-lg font-bold text-ink">
+                    Cold Coffee
+                  </h3>
+                  <p class="mt-1 text-sm leading-relaxed text-stone-500">
+                    Chilled and frothy blended coffee with milk and ice.
                   </p>
-                  <button
-                    type="button"
-                    data-add-to-cart
-                    class="inline-flex items-center gap-1.5 rounded-full bg-orange-600 px-5 py-2.5 text-sm font-bold text-white transition-all duration-200 hover:bg-orange-700 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-600 focus-visible:ring-offset-2"
-                  >
-                    <svg
-                      class="h-4 w-4"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2.5"
-                      stroke-linecap="round"
-                      aria-hidden="true"
+                  <div class="mt-auto flex items-center justify-between pt-4">
+                    <p class="font-display text-xl font-extrabold text-ink">
+                      ₹50
+                    </p>
+                    <button
+                      type="button"
+                      data-add-to-cart
+                      data-name="Cold Coffee"
+                      class="btn-add"
                     >
-                      <path d="M12 5v14M5 12h14" />
-                    </svg>
-                    Add to Cart
-                  </button>
+                      <svg
+                        class="h-4 w-4"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M12 5v14M5 12h14" /></svg
+                      >Add to Cart
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </article>
+              </article>
+            </div>
+            <!-- 6 -->
+            <div class="food-reveal">
+              <article
+                class="food-card flex h-full flex-col overflow-hidden rounded-3xl bg-cream shadow-card ring-1 ring-stone-900/5"
+              >
+                <div class="relative aspect-[4/3] overflow-hidden bg-orange-50">
+                  <div class="zoom h-full w-full">
+                    <img
+                      src="https://images.unsplash.com/photo-1573080496219-bb080dd4f877?q=80&w=700&auto=format&fit=crop"
+                      alt="Golden salted french fries"
+                      class="food-img h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                  <span class="tag left-3.5 text-green-700"
+                    ><i class="dot"></i>Veg</span
+                  >
+                  <span class="tag right-3.5 text-ink"
+                    ><span class="text-orange-500">★</span>4.3</span
+                  >
+                </div>
+                <div class="flex flex-1 flex-col p-5">
+                  <h3 class="font-display text-lg font-bold text-ink">
+                    French Fries
+                  </h3>
+                  <p class="mt-1 text-sm leading-relaxed text-stone-500">
+                    Golden salted fries served with a ketchup dip.
+                  </p>
+                  <div class="mt-auto flex items-center justify-between pt-4">
+                    <p class="font-display text-xl font-extrabold text-ink">
+                      ₹60
+                    </p>
+                    <button
+                      type="button"
+                      data-add-to-cart
+                      data-name="French Fries"
+                      class="btn-add"
+                    >
+                      <svg
+                        class="h-4 w-4"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M12 5v14M5 12h14" /></svg
+                      >Add to Cart
+                    </button>
+                  </div>
+                </div>
+              </article>
+            </div>
           </div>
         </div>
       </section>
 
       <!-- ============================================================
-         HOW IT WORKS — horizontal flow on desktop, stacked on mobile
-    ============================================================ -->
-      <section id="how-it-works" class="scroll-mt-24 bg-white py-20 sm:py-24">
-        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div class="section-head mx-auto max-w-2xl text-center">
-            <span
-              class="inline-block rounded-full bg-orange-100 px-4 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.2em] text-orange-700"
-              >How It Works</span
-            >
+         HOW IT WORKS — pinned, scroll-driven on tablet/desktop
+      ============================================================ -->
+      <section id="how-it-works" class="relative scroll-mt-0 bg-cream">
+        <div
+          id="how-pin"
+          class="mx-auto flex min-h-screen max-w-7xl flex-col justify-center px-4 py-20 sm:px-6 lg:px-8"
+        >
+          <div class="mx-auto max-w-2xl text-center">
+            <p class="text-sm font-extrabold text-orange-700" data-fade>
+              How it works
+            </p>
             <h2
-              class="mt-4 font-display text-3xl font-extrabold tracking-tight text-ink sm:text-4xl"
+              class="mt-3 font-display text-4xl font-extrabold tracking-tight text-ink sm:text-5xl"
+              data-split="chars"
+              data-reveal
             >
               Order in 4 Easy Steps
             </h2>
-            <p class="mt-3 text-lg leading-relaxed text-stone-500">
+            <p class="mt-4 text-lg leading-relaxed text-stone-500" data-fade>
               From craving to pickup — here's how CampusBite works.
             </p>
           </div>
 
-          <div
-            id="steps-grid"
-            class="relative mt-16 grid gap-12 md:grid-cols-4 md:gap-8"
-          >
-            <!-- Connector line (desktop only) -->
+          <div class="relative mt-16">
+            <!-- progress line (desktop) -->
             <div
-              class="pointer-events-none absolute left-[12.5%] right-[12.5%] top-9 hidden border-t-[3px] border-dashed border-orange-200 md:block"
+              class="pointer-events-none absolute left-[12.5%] right-[12.5%] top-9 hidden md:block"
               aria-hidden="true"
-            ></div>
-
-            <div
-              class="step relative flex items-start gap-5 md:flex-col md:items-center md:gap-6 md:text-center"
             >
+              <div class="h-[3px] w-full rounded bg-orange-200"></div>
               <div
-                class="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-2xl bg-orange-600 font-display text-2xl font-extrabold text-white shadow-lg shadow-orange-600/30"
-              >
-                01
-              </div>
-              <div>
-                <h3 class="font-display text-xl font-bold text-ink">Browse</h3>
-                <p class="mt-2 text-[15px] leading-relaxed text-stone-500">
-                  Explore the cafeteria menu.
-                </p>
-              </div>
+                id="line-fill"
+                class="absolute left-0 top-0 h-[3px] w-full origin-left rounded bg-orange-600"
+              ></div>
+              <div
+                id="line-dot"
+                class="absolute top-[1.5px] z-10 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-orange-600 ring-4 ring-cream"
+                style="left: 0%"
+              ></div>
             </div>
 
             <div
-              class="step relative flex items-start gap-5 md:flex-col md:items-center md:gap-6 md:text-center"
+              id="steps-grid"
+              class="relative grid gap-12 md:grid-cols-4 md:gap-8"
             >
               <div
-                class="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-2xl bg-orange-600 font-display text-2xl font-extrabold text-white shadow-lg shadow-orange-600/30"
+                class="step relative flex items-start gap-5 md:flex-col md:items-center md:gap-6 md:text-center"
               >
-                02
+                <div
+                  class="step-badge flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-2xl font-display text-2xl font-extrabold shadow-lg shadow-orange-600/30"
+                >
+                  01
+                </div>
+                <div class="step-body">
+                  <h3 class="font-display text-xl font-bold text-ink">
+                    Browse
+                  </h3>
+                  <p class="mt-2 text-[15px] leading-relaxed text-stone-500">
+                    Explore the cafeteria menu.
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 class="font-display text-xl font-bold text-ink">Choose</h3>
-                <p class="mt-2 text-[15px] leading-relaxed text-stone-500">
-                  Select your favorite food.
-                </p>
-              </div>
-            </div>
-
-            <div
-              class="step relative flex items-start gap-5 md:flex-col md:items-center md:gap-6 md:text-center"
-            >
               <div
-                class="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-2xl bg-orange-600 font-display text-2xl font-extrabold text-white shadow-lg shadow-orange-600/30"
+                class="step relative flex items-start gap-5 md:flex-col md:items-center md:gap-6 md:text-center"
               >
-                03
+                <div
+                  class="step-badge flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-2xl font-display text-2xl font-extrabold shadow-lg shadow-orange-600/30"
+                >
+                  02
+                </div>
+                <div class="step-body">
+                  <h3 class="font-display text-xl font-bold text-ink">
+                    Choose
+                  </h3>
+                  <p class="mt-2 text-[15px] leading-relaxed text-stone-500">
+                    Select your favorite food.
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 class="font-display text-xl font-bold text-ink">Order</h3>
-                <p class="mt-2 text-[15px] leading-relaxed text-stone-500">
-                  Add your items to the cart and place your pickup order.
-                </p>
-              </div>
-            </div>
-
-            <div
-              class="step relative flex items-start gap-5 md:flex-col md:items-center md:gap-6 md:text-center"
-            >
               <div
-                class="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-2xl bg-orange-600 font-display text-2xl font-extrabold text-white shadow-lg shadow-orange-600/30"
+                class="step relative flex items-start gap-5 md:flex-col md:items-center md:gap-6 md:text-center"
               >
-                04
+                <div
+                  class="step-badge flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-2xl font-display text-2xl font-extrabold shadow-lg shadow-orange-600/30"
+                >
+                  03
+                </div>
+                <div class="step-body">
+                  <h3 class="font-display text-xl font-bold text-ink">Order</h3>
+                  <p class="mt-2 text-[15px] leading-relaxed text-stone-500">
+                    Add your items to the cart and place your pickup order.
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 class="font-display text-xl font-bold text-ink">Pick Up</h3>
-                <p class="mt-2 text-[15px] leading-relaxed text-stone-500">
-                  Collect your freshly prepared food from the cafeteria.
-                </p>
+              <div
+                class="step relative flex items-start gap-5 md:flex-col md:items-center md:gap-6 md:text-center"
+              >
+                <div
+                  class="step-badge flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-2xl font-display text-2xl font-extrabold shadow-lg shadow-orange-600/30"
+                >
+                  04
+                </div>
+                <div class="step-body">
+                  <h3 class="font-display text-xl font-bold text-ink">
+                    Pick Up
+                  </h3>
+                  <p class="mt-2 text-[15px] leading-relaxed text-stone-500">
+                    Collect your freshly prepared food from the cafeteria.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -1378,142 +1768,137 @@
       </section>
 
       <!-- ============================================================
-         WHY CAMPUSBITE — dark inset card (visually different)
-    ============================================================ -->
+         WHY CAMPUSBITE — scroll-scrubbed statement
+      ============================================================ -->
       <section id="about" class="scroll-mt-24 bg-cream py-14 sm:py-16">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div
-            class="relative overflow-hidden rounded-[2.5rem] bg-ink px-6 py-14 sm:px-10 sm:py-16 lg:px-16 lg:py-20"
+            id="about-card"
+            class="relative overflow-hidden rounded-[2.5rem] bg-ink px-6 py-16 sm:px-10 sm:py-20 lg:px-16 lg:py-28"
           >
-            <!-- Decorations -->
-            <svg
-              class="pointer-events-none absolute -right-8 -top-8 h-40 w-40 opacity-10"
-              aria-hidden="true"
-            >
-              <defs>
-                <pattern
-                  id="why-dots"
-                  width="16"
-                  height="16"
-                  patternUnits="userSpaceOnUse"
-                >
-                  <circle cx="2.5" cy="2.5" r="2.5" fill="#FFFFFF" />
-                </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#why-dots)" />
-            </svg>
             <div
               class="pointer-events-none absolute -bottom-24 -left-24 h-64 w-64 rounded-full border-[3px] border-dashed border-orange-500/30"
               aria-hidden="true"
             ></div>
+            <div
+              class="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full border-[3px] border-dashed border-orange-500/20"
+              aria-hidden="true"
+            ></div>
 
-            <div class="section-head relative max-w-2xl">
-              <span
-                class="inline-block rounded-full bg-orange-500/15 px-4 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.2em] text-orange-400"
-                >Why CampusBite</span
-              >
-              <h2
-                class="mt-4 font-display text-3xl font-extrabold tracking-tight text-white sm:text-4xl"
-              >
-                Why Students Choose CampusBite
-              </h2>
-              <p class="mt-3 text-lg leading-relaxed text-stone-400">
-                Made for busy schedules, tight budgets, and serious cravings.
-              </p>
-            </div>
+            <p class="relative text-sm font-extrabold text-orange-400">
+              Why students choose CampusBite
+            </p>
+            <p
+              id="statement"
+              class="relative mt-6 max-w-5xl font-display text-3xl font-extrabold leading-[1.12] tracking-tight text-white sm:text-5xl lg:text-6xl"
+            >
+              Order before you reach the cafeteria. Pick up when it's ready.
+              Spend your break eating, not waiting in line.
+            </p>
 
-            <!-- Editorial-style features (no cards — different from sections above) -->
             <div
               id="features-grid"
-              class="relative mt-14 grid gap-x-12 gap-y-10 sm:grid-cols-2 lg:gap-x-20"
+              class="relative mt-20 grid gap-x-12 gap-y-10 sm:grid-cols-2 lg:gap-x-20"
             >
-              <div class="border-t border-white/15 pt-7">
-                <svg
-                  class="h-8 w-8 text-orange-400"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M13 2 4.5 13.5h6.5l-1 8.5 8.5-11.5h-6.5l1-8.5z" />
-                </svg>
-                <h3 class="mt-4 font-display text-xl font-bold text-white">
-                  Skip the Queue
-                </h3>
-                <p class="mt-2 text-[15px] leading-relaxed text-stone-400">
-                  Order before reaching the cafeteria.
-                </p>
+              <div class="feature">
+                <div class="feature-line h-px origin-left bg-white/20"></div>
+                <div class="pt-7">
+                  <svg
+                    class="h-8 w-8 text-orange-400"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M13 2 4.5 13.5h6.5l-1 8.5 8.5-11.5h-6.5l1-8.5z" />
+                  </svg>
+                  <h3 class="mt-4 font-display text-xl font-bold text-white">
+                    Skip the Queue
+                  </h3>
+                  <p class="mt-2 text-[15px] leading-relaxed text-stone-400">
+                    Order before reaching the cafeteria.
+                  </p>
+                </div>
               </div>
-              <div class="border-t border-white/15 pt-7">
-                <svg
-                  class="h-8 w-8 text-orange-400"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M12.6 2.5H3.5v9.1l9 9a1.6 1.6 0 0 0 2.3 0l6.8-6.8a1.6 1.6 0 0 0 0-2.3z"
-                  />
-                  <circle cx="7.6" cy="7.6" r="1.4" />
-                </svg>
-                <h3 class="mt-4 font-display text-xl font-bold text-white">
-                  Student-Friendly Prices
-                </h3>
-                <p class="mt-2 text-[15px] leading-relaxed text-stone-400">
-                  Quickly find affordable meals and snacks.
-                </p>
+              <div class="feature">
+                <div class="feature-line h-px origin-left bg-white/20"></div>
+                <div class="pt-7">
+                  <svg
+                    class="h-8 w-8 text-orange-400"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M12.6 2.5H3.5v9.1l9 9a1.6 1.6 0 0 0 2.3 0l6.8-6.8a1.6 1.6 0 0 0 0-2.3z"
+                    />
+                    <circle cx="7.6" cy="7.6" r="1.4" />
+                  </svg>
+                  <h3 class="mt-4 font-display text-xl font-bold text-white">
+                    Student-Friendly Prices
+                  </h3>
+                  <p class="mt-2 text-[15px] leading-relaxed text-stone-400">
+                    Quickly find affordable meals and snacks.
+                  </p>
+                </div>
               </div>
-              <div class="border-t border-white/15 pt-7">
-                <svg
-                  class="h-8 w-8 text-orange-400"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-                  <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-                </svg>
-                <h3 class="mt-4 font-display text-xl font-bold text-white">
-                  Easy Pickup
-                </h3>
-                <p class="mt-2 text-[15px] leading-relaxed text-stone-400">
-                  Know when your food is ready.
-                </p>
+              <div class="feature">
+                <div class="feature-line h-px origin-left bg-white/20"></div>
+                <div class="pt-7">
+                  <svg
+                    class="h-8 w-8 text-orange-400"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                    <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                  </svg>
+                  <h3 class="mt-4 font-display text-xl font-bold text-white">
+                    Easy Pickup
+                  </h3>
+                  <p class="mt-2 text-[15px] leading-relaxed text-stone-400">
+                    Know when your food is ready.
+                  </p>
+                </div>
               </div>
-              <div class="border-t border-white/15 pt-7">
-                <svg
-                  class="h-8 w-8 text-orange-400"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"
-                  />
-                  <path d="M3 6h18" />
-                  <path d="M16 10a4 4 0 0 1-8 0" />
-                </svg>
-                <h3 class="mt-4 font-display text-xl font-bold text-white">
-                  Simple Ordering
-                </h3>
-                <p class="mt-2 text-[15px] leading-relaxed text-stone-400">
-                  Browse, order, and pick up without unnecessary steps.
-                </p>
+              <div class="feature">
+                <div class="feature-line h-px origin-left bg-white/20"></div>
+                <div class="pt-7">
+                  <svg
+                    class="h-8 w-8 text-orange-400"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"
+                    />
+                    <path d="M3 6h18" />
+                    <path d="M16 10a4 4 0 0 1-8 0" />
+                  </svg>
+                  <h3 class="mt-4 font-display text-xl font-bold text-white">
+                    Simple Ordering
+                  </h3>
+                  <p class="mt-2 text-[15px] leading-relaxed text-stone-400">
+                    Browse, order, and pick up without unnecessary steps.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -1522,75 +1907,67 @@
 
       <!-- ============================================================
          FINAL CTA
-    ============================================================ -->
-      <section id="cta" class="bg-cream pb-16 sm:pb-20">
+      ============================================================ -->
+      <section id="cta" class="bg-cream pb-16 pt-6 sm:pb-20">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div
             id="cta-card"
             class="relative overflow-hidden rounded-[2.5rem] bg-orange-700 px-6 py-14 sm:px-12 sm:py-16 lg:px-16 lg:py-20"
           >
-            <!-- Decorations -->
-            <svg
-              class="pointer-events-none absolute -left-8 -top-8 h-40 w-40 opacity-20"
-              aria-hidden="true"
-            >
-              <defs>
-                <pattern
-                  id="cta-dots"
-                  width="16"
-                  height="16"
-                  patternUnits="userSpaceOnUse"
-                >
-                  <circle cx="2.5" cy="2.5" r="2.5" fill="#FFF7ED" />
-                </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#cta-dots)" />
-            </svg>
             <div
               class="pointer-events-none absolute -bottom-16 -right-16 h-52 w-52 rounded-full border-[3px] border-dashed border-white/30"
+              aria-hidden="true"
+            ></div>
+            <div
+              class="pointer-events-none absolute -left-16 -top-16 h-44 w-44 rounded-full border-[3px] border-dashed border-white/20"
               aria-hidden="true"
             ></div>
 
             <div
               class="relative grid items-center gap-12 lg:grid-cols-[1.15fr_0.85fr]"
             >
-              <div id="cta-copy" class="text-center lg:text-left">
+              <div class="text-center lg:text-left">
                 <h2
-                  class="font-display text-3xl font-extrabold leading-tight tracking-tight text-white sm:text-4xl lg:text-[2.75rem]"
+                  class="font-display text-4xl font-extrabold leading-tight tracking-tight text-white sm:text-5xl lg:text-[3.25rem]"
+                  data-split="chars"
+                  data-reveal
                 >
                   Hungry? Your next meal is a few clicks away.
                 </h2>
-                <p class="mt-4 text-lg leading-relaxed text-orange-100">
+                <p
+                  class="mt-4 text-lg leading-relaxed text-orange-100"
+                  data-fade
+                >
                   Browse today's cafeteria menu and order your favorites before
                   the queue gets long.
                 </p>
                 <div class="mt-8 flex justify-center lg:justify-start">
-                  <!-- Phase 2: point this to menu.html -->
-                  <a
-                    href="#menu"
-                    class="cta-btn group inline-flex items-center gap-2.5 rounded-full bg-white px-8 py-4 text-base font-bold text-orange-800 shadow-xl shadow-orange-900/10 transition-all duration-300 hover:bg-orange-50 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-                  >
-                    Browse Menu
-                    <svg
-                      class="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2.2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      aria-hidden="true"
+                  <span class="inline-block" data-magnetic="0.3">
+                    <a
+                      href="#menu"
+                      data-cursor="Eat"
+                      class="group inline-flex items-center gap-2.5 rounded-full bg-white px-8 py-4 text-base font-bold text-orange-800 shadow-xl shadow-orange-900/10 transition-colors duration-300 hover:bg-orange-50 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
                     >
-                      <path d="M5 12h14" />
-                      <path d="M12 5l7 7-7 7" />
-                    </svg>
-                  </a>
+                      Browse Menu
+                      <svg
+                        class="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M5 12h14" />
+                        <path d="M12 5l7 7-7 7" />
+                      </svg>
+                    </a>
+                  </span>
                 </div>
               </div>
 
-              <!-- Food visual -->
               <div
-                id="cta-visual"
                 class="relative mx-auto h-48 w-48 sm:h-60 sm:w-60 lg:h-64 lg:w-64"
               >
                 <div
@@ -1598,6 +1975,7 @@
                   aria-hidden="true"
                 ></div>
                 <img
+                  id="cta-bowl"
                   src="https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?q=80&w=700&auto=format&fit=crop"
                   alt="Fresh colorful meal bowl garnished with vegetables"
                   class="h-full w-full rounded-full object-cover shadow-2xl"
@@ -1606,17 +1984,8 @@
                 <span
                   class="absolute bottom-0 left-1/2 flex -translate-x-1/2 translate-y-1/2 items-center gap-1.5 whitespace-nowrap rounded-full bg-white px-4 py-2 text-xs font-extrabold text-ink shadow-card"
                 >
-                  <svg
-                    class="h-3.5 w-3.5 text-orange-500"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"
-                    />
-                  </svg>
-                  4.8 · Loved by students
+                  <span class="text-orange-500" aria-hidden="true">★</span>4.8 ·
+                  Loved by students
                 </span>
               </div>
             </div>
@@ -1626,132 +1995,137 @@
     </main>
 
     <!-- ============================================================
-       TEAM SECTION
-  ============================================================ -->
-    <section class="bg-white py-20">
+       TEAM
+    ============================================================ -->
+    <section class="bg-white py-20 sm:py-28">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="text-center">
-          <p
-            class="text-sm font-extrabold uppercase tracking-widest text-orange-600"
-          >
-            The People Behind CampusBite
+          <p class="text-sm font-extrabold text-orange-600" data-fade>
+            The people behind CampusBite
           </p>
           <h2
             class="mt-3 font-display text-4xl font-extrabold tracking-tight text-ink sm:text-5xl"
+            data-split="chars"
+            data-reveal
           >
             Meet Our Team
           </h2>
-          <p class="mx-auto mt-4 max-w-2xl text-stone-500">
+          <p class="mx-auto mt-4 max-w-2xl text-stone-500" data-fade>
             Passionate students building a smarter, faster way to order campus
             food — no queues, no hassle.
           </p>
         </div>
 
-        <div
-          class="mt-14 grid gap-8 sm:grid-cols-2 lg:grid-cols-3"
-        >
-          <!-- Chirag — Admin -->
-          <article
-            class="group overflow-hidden rounded-3xl border border-orange-100 bg-cream shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-float"
-          >
-            <div class="relative h-72 overflow-hidden bg-orange-100">
-              <img
-                src="assets/chirag.webp"
-                alt="Chirag — CampusBite Admin"
-                class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                loading="lazy"
-              />
-              <span
-                class="absolute bottom-3 left-3 rounded-full bg-ink/80 px-3 py-1 text-xs font-extrabold text-white backdrop-blur"
-                >Admin</span
+        <div class="mt-14 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+          <div class="team-reveal">
+            <article
+              class="overflow-hidden rounded-3xl border border-orange-100 bg-cream shadow-card"
+            >
+              <div
+                class="team-frame relative h-72 overflow-hidden bg-orange-100"
               >
-            </div>
-            <div class="p-6 text-center">
-              <h3 class="font-display text-xl font-extrabold text-ink">
-                Chirag
-              </h3>
-              <p class="mt-1 text-sm font-bold text-orange-600">
-                Project Admin
-              </p>
-              <p class="mt-3 text-sm leading-relaxed text-stone-500">
-                Oversees the platform, manages menus, and keeps the cafeteria
-                pipeline running smoothly.
-              </p>
-            </div>
-          </article>
-
-          <!-- Dhairya — User -->
-          <article
-            class="group overflow-hidden rounded-3xl border border-orange-100 bg-cream shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-float"
-          >
-            <div class="relative h-72 overflow-hidden bg-orange-100">
-              <img
-                src="assets/dhairya.jpeg"
-                alt="Dhairya — CampusBite User"
-                class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                loading="lazy"
-              />
-              <span
-                class="absolute bottom-3 left-3 rounded-full bg-orange-600/90 px-3 py-1 text-xs font-extrabold text-white backdrop-blur"
-                >Student</span
+                <img
+                  src="assets/chirag.webp"
+                  alt="Chirag — CampusBite Admin"
+                  class="team-img h-full w-full object-cover"
+                  loading="lazy"
+                />
+                <span
+                  class="absolute bottom-3 left-3 rounded-full bg-ink/80 px-3 py-1 text-xs font-extrabold text-white backdrop-blur"
+                  >Admin</span
+                >
+              </div>
+              <div class="p-6 text-center">
+                <h3 class="font-display text-xl font-extrabold text-ink">
+                  Chirag
+                </h3>
+                <p class="mt-1 text-sm font-bold text-orange-600">
+                  Project Admin
+                </p>
+                <p class="mt-3 text-sm leading-relaxed text-stone-500">
+                  Oversees the platform, manages menus, and keeps the cafeteria
+                  pipeline running smoothly.
+                </p>
+              </div>
+            </article>
+          </div>
+          <div class="team-reveal">
+            <article
+              class="overflow-hidden rounded-3xl border border-orange-100 bg-cream shadow-card"
+            >
+              <div
+                class="team-frame relative h-72 overflow-hidden bg-orange-100"
               >
-            </div>
-            <div class="p-6 text-center">
-              <h3 class="font-display text-xl font-extrabold text-ink">
-                Dhairya
-              </h3>
-              <p class="mt-1 text-sm font-bold text-orange-600">
-                Student User
-              </p>
-              <p class="mt-3 text-sm leading-relaxed text-stone-500">
-                Represents the student experience — browsing the menu, placing
-                orders, and skipping the queue.
-              </p>
-            </div>
-          </article>
-
-          <!-- Jeet — Guest User -->
-          <article
-            class="group overflow-hidden rounded-3xl border border-orange-100 bg-cream shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-float"
-          >
-            <div class="relative h-72 overflow-hidden bg-orange-100">
-              <img
-                src="assets/jeet.jpeg"
-                alt="Jeet — CampusBite Guest User"
-                class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                loading="lazy"
-              />
-              <span
-                class="absolute bottom-3 left-3 rounded-full bg-stone-600/80 px-3 py-1 text-xs font-extrabold text-white backdrop-blur"
-                >Guest</span
+                <img
+                  src="assets/dhairya.jpeg"
+                  alt="Dhairya — CampusBite User"
+                  class="team-img h-full w-full object-cover"
+                  loading="lazy"
+                />
+                <span
+                  class="absolute bottom-3 left-3 rounded-full bg-orange-600/90 px-3 py-1 text-xs font-extrabold text-white backdrop-blur"
+                  >Student</span
+                >
+              </div>
+              <div class="p-6 text-center">
+                <h3 class="font-display text-xl font-extrabold text-ink">
+                  Dhairya
+                </h3>
+                <p class="mt-1 text-sm font-bold text-orange-600">
+                  Student User
+                </p>
+                <p class="mt-3 text-sm leading-relaxed text-stone-500">
+                  Represents the student experience — browsing the menu, placing
+                  orders, and skipping the queue.
+                </p>
+              </div>
+            </article>
+          </div>
+          <div class="team-reveal">
+            <article
+              class="overflow-hidden rounded-3xl border border-orange-100 bg-cream shadow-card"
+            >
+              <div
+                class="team-frame relative h-72 overflow-hidden bg-orange-100"
               >
-            </div>
-            <div class="p-6 text-center">
-              <h3 class="font-display text-xl font-extrabold text-ink">
-                Jeet
-              </h3>
-              <p class="mt-1 text-sm font-bold text-orange-600">
-                Guest User
-              </p>
-              <p class="mt-3 text-sm leading-relaxed text-stone-500">
-                Explores the menu as a guest — proof that CampusBite works
-                for anyone, not just enrolled students.
-              </p>
-            </div>
-          </article>
+                <img
+                  src="assets/jeet.jpeg"
+                  alt="Jeet — CampusBite Guest User"
+                  class="team-img h-full w-full object-cover"
+                  loading="lazy"
+                />
+                <span
+                  class="absolute bottom-3 left-3 rounded-full bg-stone-600/80 px-3 py-1 text-xs font-extrabold text-white backdrop-blur"
+                  >Guest</span
+                >
+              </div>
+              <div class="p-6 text-center">
+                <h3 class="font-display text-xl font-extrabold text-ink">
+                  Jeet
+                </h3>
+                <p class="mt-1 text-sm font-bold text-orange-600">Guest User</p>
+                <p class="mt-3 text-sm leading-relaxed text-stone-500">
+                  Explores the menu as a guest — proof that CampusBite works for
+                  anyone, not just enrolled students.
+                </p>
+              </div>
+            </article>
+          </div>
         </div>
       </div>
     </section>
 
     <!-- ============================================================
        FOOTER
-  ============================================================ -->
-    <footer id="contact" class="scroll-mt-24 bg-ink text-stone-400">
-      <div class="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+    ============================================================ -->
+    <footer
+      id="contact"
+      class="scroll-mt-24 overflow-hidden bg-ink text-stone-400"
+    >
+      <div class="mx-auto max-w-7xl px-4 pt-16 sm:px-6 lg:px-8">
         <div
           class="grid gap-12 md:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr_1.4fr]"
         >
-          <!-- Brand -->
           <div>
             <a
               href="#home"
@@ -1793,11 +2167,8 @@
             </p>
           </div>
 
-          <!-- Quick Links -->
           <nav aria-label="Quick links">
-            <h3
-              class="font-display text-sm font-extrabold uppercase tracking-[0.15em] text-white"
-            >
+            <h3 class="font-display text-base font-extrabold text-white">
               Quick Links
             </h3>
             <ul class="mt-5 space-y-3 text-[15px]">
@@ -1833,31 +2204,28 @@
             </ul>
           </nav>
 
-          <!-- Student links (Phase 2 placeholders) -->
           <nav aria-label="Student links">
-            <h3
-              class="font-display text-sm font-extrabold uppercase tracking-[0.15em] text-white"
-            >
+            <h3 class="font-display text-base font-extrabold text-white">
               Student
             </h3>
             <ul class="mt-5 space-y-3 text-[15px]">
               <li>
                 <a
-                  href="login.html"
+                  href="login.php"
                   class="transition-colors hover:text-orange-400"
                   >Login</a
                 >
               </li>
               <li>
                 <a
-                  href="register.html"
+                  href="register.php"
                   class="transition-colors hover:text-orange-400"
                   >Register</a
                 >
               </li>
               <li>
                 <a
-                  href="orders.html"
+                  href="orders.php"
                   class="transition-colors hover:text-orange-400"
                   >My Orders</a
                 >
@@ -1865,11 +2233,8 @@
             </ul>
           </nav>
 
-          <!-- Contact -->
           <div>
-            <h3
-              class="font-display text-sm font-extrabold uppercase tracking-[0.15em] text-white"
-            >
+            <h3 class="font-display text-base font-extrabold text-white">
               Contact
             </h3>
             <ul class="mt-5 space-y-4 text-[15px]">
@@ -1958,6 +2323,7 @@
           </p>
           <a
             href="#home"
+            data-cursor="Top"
             class="inline-flex items-center gap-1.5 text-sm font-bold text-stone-300 transition-colors hover:text-orange-400"
           >
             Back to top
@@ -1977,9 +2343,18 @@
           </a>
         </div>
       </div>
+
+      <!-- Giant wordmark -->
+      <p
+        id="foot-mark"
+        class="hero-tagline mt-10 select-none text-center text-[23vw] leading-[.78] text-orange-600"
+        aria-hidden="true"
+      >
+        CAMPUSBITE
+      </p>
     </footer>
 
-    <!-- Toast notification (used by all "Add to Cart" buttons) -->
+    <!-- Toast -->
     <div
       id="toast"
       role="status"
@@ -2003,13 +2378,14 @@
         </svg>
       </span>
       <p id="toast-message" class="text-sm font-semibold leading-snug">
-        Please visit the Menu to add items to your cart.
+        Added to your cart.
       </p>
     </div>
 
-    <!-- GSAP (landing page animations only) -->
+    <!-- GSAP + ScrollTrigger + Lenis (smooth scroll) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.18/dist/lenis.min.js"></script>
     <script src="js/script.js"></script>
   </body>
 </html>

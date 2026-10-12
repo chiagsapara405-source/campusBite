@@ -150,7 +150,7 @@ function renderOrder() {
 
   $('order-content').innerHTML = `
     <!-- Back link -->
-    <a href="admin-orders.html"
+    <a href="admin-orders.php"
        class="focus-ring mb-6 inline-flex items-center gap-1 text-sm font-bold text-orange-600 hover:text-orange-700">
       ← Back to Orders
     </a>
@@ -397,7 +397,7 @@ function renderNotFound() {
       <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-stone-100 text-4xl">🔍</div>
       <h2 class="mt-6 font-display text-2xl font-extrabold text-ink">Order not found</h2>
       <p class="mt-3 text-stone-500">We couldn't find an order matching this ID.</p>
-      <a href="admin-orders.html"
+      <a href="admin-orders.php"
          class="focus-ring mt-6 inline-block rounded-full bg-orange-600 px-6 py-3 text-sm font-extrabold text-white hover:bg-orange-700">
         Back to Orders
       </a>

@@ -6,7 +6,7 @@
  * 1. Mobile navigation menu toggle (pure CSS transitions for instant response)
  * 2. Navbar shadow on scroll
  * 3. Add-to-cart toast notification ("Please visit the Menu to add items to your cart.")
- * 4. Phase 2 page placeholder handlers (login.html, register.html, menu.html, orders.html)
+ * 4. Phase 2 page placeholder handlers (login.php, register.php, menu.php, orders.php)
  * 5. Smooth scrolling for internal anchor links
  * 6. GSAP entrance animations:
  *    - Navbar entrance (logo first, staggered links, CTA)
@@ -16,13 +16,146 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
+  initPreloader();
   initMobileNav();
   initNavbarScrollShadow();
   initAddToCartToast();
   initPhase2Placeholders();
   initSmoothScroll();
   initGsapAnimations();
+  initMarquee();
+  initAuthLinks();
 });
+
+/* ============================================================
+   0b. MARQUEE — seamless infinite scroll
+   Duplicates the track content once so translateX(-50%) loops
+   perfectly, then applies the CSS keyframe animation.
+   ============================================================ */
+function initMarquee() {
+  const track = document.querySelector('.marquee-track');
+  if (!track) return;
+
+  // Duplicate content once (needed for the -50% seamless loop)
+  const clone = track.innerHTML;
+  track.insertAdjacentHTML('beforeend', clone);
+
+  // Mark the cloned half decorative for screen readers
+  const halves = track.children;
+  if (halves.length >= 2) {
+    for (let i = halves.length / 2; i < halves.length; i++) {
+      halves[i].setAttribute('aria-hidden', 'true');
+    }
+  }
+
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!prefersReduced) track.classList.add('is-animated');
+}
+
+/* ============================================================
+   0c. AUTH LINKS — Login → login.php, Get Started → register.php
+   ============================================================ */
+function initAuthLinks() {
+  document.querySelectorAll('a[href$="login.php"], a[href$="register.php"]').forEach((link) => {
+    link.addEventListener('click', (e) => {
+      const href = link.getAttribute('href');
+      if (!href) return;
+      e.preventDefault();
+      window.location.href = href;
+    });
+  });
+}
+
+/* ============================================================
+   0. PRELOADER (0 → 100 counter, then slide-up exit)
+   ============================================================ */
+function initPreloader() {
+  const preloader = document.getElementById('preloader');
+  if (!preloader) return;
+
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const root = document.documentElement;
+
+  // Instantly remove overlay if motion is reduced or the element is hidden
+  if (prefersReduced || getComputedStyle(preloader).display === 'none') {
+    preloader.remove();
+    root.classList.remove('is-loading');
+    return;
+  }
+
+  // Lock scrolling while the preloader is visible
+  root.classList.add('is-loading');
+
+  const counterEl = document.getElementById('pre-count');
+  const progress = { value: 0 };
+
+  // Hard safety: never keep the overlay longer than 5s
+  const forceFinish = setTimeout(finish, 5000);
+
+  function finish() {
+    clearTimeout(forceFinish);
+    root.classList.remove('is-loading');
+    preloader.remove();
+  }
+
+  function startExit() {
+    if (typeof gsap !== 'undefined') {
+      gsap.to(preloader, {
+        yPercent: -100,
+        duration: 0.8,
+        ease: 'power3.inOut',
+        onComplete: finish
+      });
+      gsap.to(preloader.querySelector('svg'), {
+        yPercent: -30,
+        duration: 0.8,
+        ease: 'power3.inOut'
+      });
+    } else {
+      // GSAP fallback: fade out with a CSS transition
+      preloader.style.transition = 'opacity .4s ease, transform .4s ease';
+      preloader.style.transform = 'translateY(-100%)';
+      setTimeout(finish, 450);
+    }
+  }
+
+  // Intro animation for logo + wordmark
+  if (typeof gsap !== 'undefined') {
+    gsap.from('.pre-logo', { scale: 0.6, opacity: 0, duration: 0.5, ease: 'back.out(1.6)' });
+    gsap.from('.pre-word', { yPercent: 110, duration: 0.6, ease: 'power3.out', delay: 0.15 });
+  }
+
+  // Count 0 → 100, then wait for window load (or timeout) before exiting
+  const onLoaded = () => {
+    // small breathing room so 100 is visible for a beat
+    setTimeout(startExit, 250);
+  };
+
+  if (document.readyState === 'complete') {
+    onLoaded();
+  } else {
+    window.addEventListener('load', onLoaded, { once: true });
+  }
+
+  if (typeof gsap !== 'undefined') {
+    gsap.to(progress, {
+      value: 100,
+      duration: 1.6,
+      ease: 'power1.inOut',
+      onUpdate: () => {
+        if (counterEl) counterEl.textContent = Math.round(progress.value);
+      }
+    });
+  } else {
+    // No GSAP: plain interval counter, then exit
+    let value = 0;
+    const timer = setInterval(() => {
+      value += 5;
+      if (counterEl) counterEl.textContent = Math.min(value, 100);
+      if (value >= 100) clearInterval(timer);
+    }, 80);
+  }
+}
 
 /* ============================================================
    1. MOBILE NAVIGATION TOGGLE
@@ -157,7 +290,7 @@ function showToast(message) {
 function initPhase2Placeholders() {
   // Only the unfinished orders page remains a placeholder.
   // Login, registration, and the menu destination navigate normally.
-  const phase2Selectors = 'a[href$=".html"]';
+  const phase2Selectors = 'a[href$=".php"]';
   const phase2Links = document.querySelectorAll(phase2Selectors);
 
   phase2Links.forEach((link) => {

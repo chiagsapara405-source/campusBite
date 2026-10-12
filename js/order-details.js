@@ -164,7 +164,7 @@ function renderOrder(order) {
 
   $('order-content').innerHTML = `
     <section class="text-center sm:text-left">
-      <a href="orders.html"
+      <a href="orders.php"
          class="focus-ring inline-block text-sm font-bold text-orange-600 hover:text-orange-700">
         ← Back to My Orders
       </a>
@@ -199,7 +199,7 @@ function renderOrder(order) {
     </section>
 
     <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
-      <a href="orders.html"
+      <a href="orders.php"
          class="focus-ring inline-block rounded-full bg-orange-600 px-6 py-3 text-center text-sm font-extrabold text-white hover:bg-orange-700">
         Back to My Orders
       </a>
@@ -451,10 +451,10 @@ function handleOrderAgain() {
 
   if (skipped > 0) {
     showToast(`${skipped} item${skipped > 1 ? 's' : ''} no longer available`);
-    setTimeout(() => { window.location.href = 'cart.html'; }, 1500);
+    setTimeout(() => { window.location.href = 'cart.php'; }, 1500);
   } else {
     showToast('Items added to cart');
-    setTimeout(() => { window.location.href = 'cart.html'; }, 1000);
+    setTimeout(() => { window.location.href = 'cart.php'; }, 1000);
   }
 }
 
@@ -466,7 +466,7 @@ function handleOrderNotFound() {
       <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-stone-100 text-4xl">📋</div>
       <h2 class="mt-6 font-display text-2xl font-extrabold text-ink">Order not found</h2>
       <p class="mt-3 text-stone-500">We couldn't find an order matching this ID.</p>
-      <a href="orders.html"
+      <a href="orders.php"
          class="focus-ring mt-6 inline-block rounded-full bg-orange-600 px-6 py-3 text-sm font-extrabold text-white hover:bg-orange-700">
         Back to My Orders
       </a>

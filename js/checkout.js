@@ -159,7 +159,7 @@ function handleEmptyCart() {
       <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-orange-100 text-4xl">🛒</div>
       <h2 class="mt-6 font-display text-2xl font-extrabold text-ink">Your cart is empty</h2>
       <p class="mt-3 text-stone-500">Add items from the menu before checking out.</p>
-      <a href="menu.html"
+      <a href="menu.php"
          class="focus-ring mt-6 inline-block rounded-full bg-orange-600 px-6 py-3 text-sm font-extrabold text-white hover:bg-orange-700">
         Browse Menu
       </a>
@@ -213,7 +213,7 @@ function renderOrderSummary() {
               class="focus-ring mt-5 w-full rounded-xl bg-orange-600 px-4 py-3.5 text-sm font-extrabold text-white hover:bg-orange-700">
         Place Order
       </button>
-      <a href="cart.html"
+      <a href="cart.php"
          class="focus-ring mt-3 block rounded-xl border border-stone-200 px-4 py-3 text-center text-sm font-bold text-stone-600 hover:bg-orange-50">
         ← Back to Cart
       </a>
@@ -384,7 +384,7 @@ function placeOrder() {
     const order = createOrder();
     saveOrder(order);
     clearCart();
-    window.location.href = 'order-confirmation.html';
+    window.location.href = 'order-confirmation.php';
   }, 1200);
 }
 

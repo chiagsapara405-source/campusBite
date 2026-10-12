@@ -110,7 +110,7 @@ function bindEvents() {
   // "Coming soon" links
   document.querySelectorAll('[data-future]').forEach(x => {
     x.addEventListener('click', e => {
-      if (x.matches('a[href="cart.html"]')) return;
+      if (x.matches('a[href="cart.php"]')) return;
       e.preventDefault();
       showToast('This feature is coming soon.');
     });
@@ -368,7 +368,7 @@ function updateCart() {
   $('summary-total').textContent = money(total);
   $('cart-summary').classList.toggle('hidden', !n);
 
-  document.querySelector('a[href="cart.html"]')
+  document.querySelector('a[href="cart.php"]')
     .setAttribute('aria-label', `View cart, ${n} items`);
 }
 

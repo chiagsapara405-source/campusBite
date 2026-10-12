@@ -212,7 +212,7 @@ function orderCard(order) {
         </div>
         <div class="flex items-center gap-4 sm:flex-col sm:items-end sm:gap-2">
           <p class="font-display text-xl font-extrabold text-ink">${money(order.total)}</p>
-          <a href="order-details.html?id=${encodeURIComponent(order.orderId)}"
+          <a href="order-details.php?id=${encodeURIComponent(order.orderId)}"
              class="focus-ring rounded-xl bg-orange-600 px-4 py-2 text-sm font-extrabold text-white hover:bg-orange-700">
             View Order
           </a>
@@ -233,7 +233,7 @@ function showEmptyState() {
       <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-orange-100 text-4xl">🍽️</div>
       <h2 class="mt-6 font-display text-2xl font-extrabold text-ink">No orders yet</h2>
       <p class="mt-3 text-stone-500">Your next meal is waiting. Browse today's cafeteria menu and place your first order.</p>
-      <a href="menu.html"
+      <a href="menu.php"
          class="focus-ring mt-6 inline-block rounded-full bg-orange-600 px-6 py-3 text-sm font-extrabold text-white hover:bg-orange-700">
         Browse Menu
       </a>

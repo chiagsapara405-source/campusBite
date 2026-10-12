@@ -149,11 +149,11 @@ function renderOrderDetails(order) {
     ` : ''}
 
     <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
-      <a href="orders.html"
+      <a href="orders.php"
          class="focus-ring inline-block rounded-full bg-orange-600 px-6 py-3 text-center text-sm font-extrabold text-white hover:bg-orange-700">
         View My Orders
       </a>
-      <a href="menu.html"
+      <a href="menu.php"
          class="focus-ring inline-block rounded-full border border-stone-200 bg-white px-6 py-3 text-center text-sm font-bold text-stone-600 hover:bg-orange-50">
         Back to Menu
       </a>
@@ -230,7 +230,7 @@ function handleMissingOrder() {
       <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-stone-100 text-4xl">📋</div>
       <h2 class="mt-6 font-display text-2xl font-extrabold text-ink">Order not found</h2>
       <p class="mt-3 text-stone-500">We couldn't find a recent order on this device.</p>
-      <a href="menu.html"
+      <a href="menu.php"
          class="focus-ring mt-6 inline-block rounded-full bg-orange-600 px-6 py-3 text-sm font-extrabold text-white hover:bg-orange-700">
         Back to Menu
       </a>

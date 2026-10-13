@@ -70,14 +70,7 @@ function bindEvents() {
 // ─── Data ────────────────────────────────────────────────────────────────────
 
 function loadOrders() {
-  try {
-    const raw = localStorage.getItem(ORDERS_KEY);
-    orders = raw ? JSON.parse(raw) : [];
-    if (!Array.isArray(orders)) orders = [];
-    orders = orders.filter(o => o && o.orderId && Array.isArray(o.items));
-  } catch {
-    orders = [];
-  }
+  orders = Array.isArray(window.CAMPUSBITE_ORDERS) ? window.CAMPUSBITE_ORDERS : [];
 }
 
 function updateCartCount() {
@@ -195,7 +188,9 @@ function orderCard(order) {
   const badgeClass  = STATUS_STYLES[status] || STATUS_STYLES.Pending;
   const badgeLabel  = STATUS_LABELS[status] || status;
   const dateStr     = formatOrderDate(order.createdAt);
-  const itemSummary = order.items.slice(0, 2).map(i => `${i.quantity} × ${escapeHtml(i.name)}`).join(', ');
+  const itemSummary = order.items.length
+    ? order.items.slice(0, 2).map(i => `${i.quantity} x ${escapeHtml(i.name)}`).join(', ')
+    : 'Item details will be available in a future update.';
   const moreCount   = order.items.length - 2;
   const moreLabel   = moreCount > 0 ? `, <span class="text-stone-400">+${moreCount} more item${moreCount > 1 ? 's' : ''}</span>` : '';
 

@@ -1,4 +1,52 @@
-<!DOCTYPE html>
+<?php
+require_once __DIR__ . '/db.php';
+
+$errors = [];
+$old    = ['name' => trim($_POST['name'] ?? ''), 'email' => strtolower(trim($_POST['email'] ?? ''))];
+$terms  = isset($_POST['terms']);
+$notice = isset($_GET['registered']) ? 'Account created successfully. Please sign in.' : null;
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $password = (string) ($_POST['password'] ?? '');
+
+    if (mb_strlen($old['name']) < 2)                       { $errors['name'] = 'Please enter your full name.'; }
+    if (!filter_var($old['email'], FILTER_VALIDATE_EMAIL)) { $errors['email'] = 'Please enter a valid college email address.'; }
+    if (strlen($password) < 6)                             { $errors['password'] = 'Password must be at least 6 characters.'; }
+    if (!$terms)                                           { $errors['terms'] = 'Please confirm account creation.'; }
+
+    if (!$errors) {
+        $email = $old['email'];
+        $stmt  = db()->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
+        $stmt->bind_param('s', $email);
+        $stmt->execute();
+        if ($stmt->get_result()->fetch_assoc()) {
+            $errors['email'] = 'An account with this email already exists. Please sign in instead.';
+        }
+    }
+
+    if (!$errors) {
+        $name  = $old['name'];
+        $email = $old['email'];
+        $hash  = password_hash($password, PASSWORD_DEFAULT);
+        try {
+            $stmt = db()->prepare("INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, 'student')");
+            $stmt->bind_param('sss', $name, $email, $hash);
+            $stmt->execute();
+        } catch (mysqli_sql_exception $e) {
+            if ((int) $e->getCode() === 1062) {
+                $errors['email'] = 'An account with this email already exists. Please sign in instead.';
+            } else {
+                throw $e;
+            }
+        }
+    }
+
+    if (!$errors) {
+        header('Location: login.php?registered=1');
+        exit;
+    }
+}
+?><!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -27,18 +75,18 @@
         <div class="dot-grid absolute inset-0 -z-10 opacity-25" aria-hidden="true"></div><div class="absolute -left-24 -top-24 -z-10 h-72 w-72 rounded-full bg-orange-500/90" aria-hidden="true"></div><div class="absolute -bottom-28 -right-20 -z-10 h-72 w-72 rounded-full border-[28px] border-orange-300/25" aria-hidden="true"></div>
         <div class="max-w-md"><span class="inline-flex items-center gap-2 rounded-full border border-orange-300/40 bg-white/10 px-3 py-1.5 text-xs font-extrabold uppercase tracking-[.16em] text-orange-100"><span class="h-2 w-2 rounded-full bg-green-400"></span>Fast campus pickup</span><h1 id="join-title" class="mt-7 font-display text-4xl font-extrabold leading-[1.04] tracking-tight sm:text-5xl">Your food break,<br /><span class="text-orange-300">made easier.</span></h1><p class="mt-5 max-w-sm text-base leading-relaxed text-orange-50/85 sm:text-lg">Create your CampusBite account to place cafeteria orders ahead of the queue.</p></div>
         <div class="relative mt-10 max-w-md rounded-[1.7rem] border border-white/15 bg-white/10 p-5 shadow-float backdrop-blur-sm"><div class="flex items-center gap-4"><div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-400 text-3xl" aria-hidden="true">🍱</div><div><p class="font-display text-lg font-bold">Lunch is looking good</p><p class="mt-1 text-sm text-orange-100/80">Order early. Pick up fresh.</p></div></div><div class="mt-5 grid grid-cols-3 gap-2"><span class="rounded-xl bg-white/10 px-2 py-3 text-center text-xs font-bold text-orange-100">No queues</span><span class="rounded-xl bg-white/10 px-2 py-3 text-center text-xs font-bold text-orange-100">Easy pickup</span><span class="rounded-xl bg-white/10 px-2 py-3 text-center text-xs font-bold text-orange-100">Campus food</span></div></div>
-        <p class="mt-10 max-w-sm text-sm font-semibold leading-relaxed text-orange-100/80">Prototype note: your information is not stored or sent anywhere.</p>
+        <p class="mt-10 max-w-sm text-sm font-semibold leading-relaxed text-orange-100/80">Your account is stored securely: passwords are encrypted and never saved in plain text.</p>
       </section>
       <section class="reveal r3 flex items-center bg-white px-6 py-10 sm:px-10 sm:py-12 lg:px-12" aria-labelledby="register-title"><div class="w-full max-w-md"><p class="text-sm font-extrabold uppercase tracking-[.16em] text-orange-600">Student registration</p><h2 id="register-title" class="mt-3 font-display text-4xl font-extrabold tracking-tight text-ink">Create your account</h2><p class="mt-3 leading-relaxed text-stone-500">Start ordering your favorite campus meals with less waiting.</p>
-        <form id="register-form" class="mt-7 space-y-4" novalidate>
-          <div><label for="name" class="mb-2 block text-sm font-extrabold text-ink">Full name</label><input id="name" name="name" type="text" autocomplete="name" placeholder="Your name" aria-describedby="name-error" class="field block w-full rounded-xl border border-stone-200 px-4 py-3 text-base text-ink placeholder:text-stone-400 transition"/><p id="name-error" class="mt-2 hidden text-sm font-bold text-red-600" role="alert"></p></div>
-          <div><label for="email" class="mb-2 block text-sm font-extrabold text-ink">Student email</label><input id="email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="you@college.edu" aria-describedby="email-error" class="field block w-full rounded-xl border border-stone-200 px-4 py-3 text-base text-ink placeholder:text-stone-400 transition"/><p id="email-error" class="mt-2 hidden text-sm font-bold text-red-600" role="alert"></p></div>
-          <div><label for="password" class="mb-2 block text-sm font-extrabold text-ink">Create password</label><div class="relative"><input id="password" name="password" type="password" autocomplete="new-password" placeholder="At least 6 characters" aria-describedby="password-error" class="field block w-full rounded-xl border border-stone-200 px-4 py-3 pr-28 text-base text-ink placeholder:text-stone-400 transition"/><button id="password-toggle" type="button" aria-controls="password" aria-label="Show password" class="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg px-3 py-2 text-sm font-extrabold text-orange-700 hover:bg-orange-50 focus:outline-none focus:ring-2 focus:ring-orange-600">Show</button></div><p id="password-error" class="mt-2 hidden text-sm font-bold text-red-600" role="alert"></p></div>
-          <label class="flex cursor-pointer items-start gap-2.5 text-sm font-semibold leading-relaxed text-stone-600"><input id="terms" type="checkbox" class="mt-0.5 h-4 w-4 rounded border-stone-300 text-orange-600 focus:ring-orange-500"/><span>I understand this is a frontend-only prototype.</span></label><p id="terms-error" class="hidden text-sm font-bold text-red-600" role="alert"></p>
-          <p id="form-status" class="hidden rounded-xl px-3.5 py-3 text-sm font-bold" role="status" aria-live="polite"></p><button id="submit-button" type="submit" class="flex w-full items-center justify-center rounded-xl bg-orange-600 px-5 py-3.5 text-base font-extrabold text-white shadow-lg shadow-orange-600/20 transition hover:bg-orange-700 active:scale-[.98] disabled:cursor-not-allowed disabled:bg-orange-300 disabled:shadow-none focus:outline-none focus:ring-2 focus:ring-orange-600 focus:ring-offset-2">Create Account</button>
+                <form id="register-form" class="mt-7 space-y-4" method="post" action="register.php" novalidate><?php if ($notice !== null): ?><p class="mb-1 rounded-xl bg-green-50 text-green-800 px-3.5 py-3 text-sm font-bold" role="status"><?php echo htmlspecialchars($notice, ENT_QUOTES, 'UTF-8'); ?></p><?php endif; ?>
+          <div><label for="name" class="mb-2 block text-sm font-extrabold text-ink">Full name</label><input id="name" name="name" type="text" autocomplete="name" placeholder="Your name" value="<?php echo htmlspecialchars($old['name'], ENT_QUOTES, 'UTF-8'); ?>" aria-describedby="name-error"<?php if (isset($errors['name'])) echo ' aria-invalid="true"'; ?> class="field block w-full rounded-xl border border-stone-200 px-4 py-3 text-base text-ink placeholder:text-stone-400 transition"/><p id="name-error" class="<?php echo isset($errors['name']) ? '' : 'hidden'; ?> mt-2 text-sm font-bold text-red-600" role="alert"><?php echo htmlspecialchars($errors['name'] ?? '', ENT_QUOTES, 'UTF-8'); ?></p></div>
+          <div><label for="email" class="mb-2 block text-sm font-extrabold text-ink">Student email</label><input id="email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="you@college.edu" value="<?php echo htmlspecialchars($old['email'], ENT_QUOTES, 'UTF-8'); ?>" aria-describedby="email-error"<?php if (isset($errors['email'])) echo ' aria-invalid="true"'; ?> class="field block w-full rounded-xl border border-stone-200 px-4 py-3 text-base text-ink placeholder:text-stone-400 transition"/><p id="email-error" class="<?php echo isset($errors['email']) ? '' : 'hidden'; ?> mt-2 text-sm font-bold text-red-600" role="alert"><?php echo htmlspecialchars($errors['email'] ?? '', ENT_QUOTES, 'UTF-8'); ?></p></div>
+          <div><label for="password" class="mb-2 block text-sm font-extrabold text-ink">Create password</label><input id="password" name="password" type="password" autocomplete="new-password" placeholder="At least 6 characters" aria-describedby="password-error"<?php if (isset($errors['password'])) echo ' aria-invalid="true"'; ?> class="field block w-full rounded-xl border border-stone-200 px-4 py-3 text-base text-ink placeholder:text-stone-400 transition"/><p id="password-error" class="<?php echo isset($errors['password']) ? '' : 'hidden'; ?> mt-2 text-sm font-bold text-red-600" role="alert"><?php echo htmlspecialchars($errors['password'] ?? '', ENT_QUOTES, 'UTF-8'); ?></p></div>
+          <label class="flex cursor-pointer items-start gap-2.5 text-sm font-semibold leading-relaxed text-stone-600"><input id="terms" name="terms" type="checkbox" value="1"<?php if ($terms) echo ' checked'; ?> class="mt-0.5 h-4 w-4 rounded border-stone-300 text-orange-600 focus:ring-orange-500"/><span>I agree to create a CampusBite account with these details.</span></label><p id="terms-error" class="<?php echo isset($errors['terms']) ? '' : 'hidden'; ?> text-sm font-bold text-red-600" role="alert"><?php echo htmlspecialchars($errors['terms'] ?? '', ENT_QUOTES, 'UTF-8'); ?></p>
+          <button id="submit-button" type="submit" class="flex w-full items-center justify-center rounded-xl bg-orange-600 px-5 py-3.5 text-base font-extrabold text-white shadow-lg shadow-orange-600/20 transition hover:bg-orange-700 active:scale-[.98] disabled:cursor-not-allowed disabled:bg-orange-300 disabled:shadow-none focus:outline-none focus:ring-2 focus:ring-orange-600 focus:ring-offset-2">Create Account</button>
         </form><p class="mt-6 text-center text-sm font-semibold text-stone-500">Already have an account? <a href="login.php" class="font-extrabold text-orange-700 underline-offset-4 hover:underline focus:outline-none focus:ring-2 focus:ring-orange-600 focus:ring-offset-2">Sign in</a></p>
       </div></section>
     </div>
-  </main><script src="js/register.js"></script>
+  </main>
 </body>
 </html>

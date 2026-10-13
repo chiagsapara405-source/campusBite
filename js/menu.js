@@ -1,9 +1,8 @@
 // ─── Data ────────────────────────────────────────────────────────────────────
 
-let FOOD_ITEMS = [];
+let FOOD_ITEMS = Array.isArray(window.CAMPUSBITE_FOODS) ? window.CAMPUSBITE_FOODS : [];
 
-const FOODS_KEY  = 'campusbite_foods';
-const CATEGORIES = ['All', 'Breakfast', 'Meals', 'Burgers', 'Pizza', 'Snacks', 'Drinks', 'Desserts'];
+const CATEGORIES = ['All', ...new Set(FOOD_ITEMS.map(food => food.category).filter(Boolean))];
 const CART_KEY   = 'campusbite-cart-v1';
 
 const state = {
@@ -23,43 +22,7 @@ const money = n  => `₹${n}`;
 
 // ─── Load Foods ────────────────────────────────────────────────────────────
 
-function loadFoods() {
-  try {
-    const raw = localStorage.getItem(FOODS_KEY);
-    if (raw) {
-      FOOD_ITEMS = JSON.parse(raw);
-      if (Array.isArray(FOOD_ITEMS) && FOOD_ITEMS.length) return;
-    }
-  } catch {}
-  FOOD_ITEMS = [
-    ['Veg Cheese Burger',  'Burgers',   'Crispy veg patty, cheese and fresh salad.',        80,  4.5, true,  true,  '1568901346375-23c9450c58cd'],
-    ['Paneer Wrap',        'Meals',     'Spiced paneer with crunchy vegetables.',            70,  4.4, true,  true,  '1626700051175-6818013e1d4f'],
-    ['Margherita Pizza',   'Pizza',     'Tomato, mozzarella and basil on a crisp base.',   120,  4.6, true,  true,  '1513104890138-7c749659a591'],
-    ['Masala Dosa',        'Breakfast', 'Golden dosa with potato masala and chutneys.',     60,  4.7, true,  true,  '1630383249896-424e482df921'],
-    ['Cold Coffee',        'Drinks',    'Chilled, creamy coffee with a cocoa dusting.',     50,  4.3, true,  true,  '1517701550927-30cf4ba1dba5'],
-    ['French Fries',       'Snacks',    'Golden salted fries with tomato ketchup.',         60,  4.3, true,  true,  '1573080496219-bb080dd4f877'],
-    ['Veg Sandwich',       'Breakfast', 'Toasted vegetables, chutney and cheese.',          55,  4.2, true,  true,  '1528735602780-2552fd46c7af'],
-    ['Chole Bhature',      'Meals',     'Slow-cooked chickpeas with fluffy bhature.',       90,  4.6, true,  true,  '1626132647523-66f5bf380027'],
-    ['Masala Maggi',       'Snacks',    'Comforting noodles with vegetables and herbs.',    50,  4.1, true,  true,  '1612929633738-8fe44f7ec841'],
-    ['Veg Biryani',        'Meals',     'Fragrant rice, seasonal vegetables and raita.',   100,  4.5, true,  true,  '1563379926898-05f4575a45d8'],
-    ['Lemon Soda',         'Drinks',    'Sparkling lemon, mint and a pinch of salt.',       35,  4.2, true,  true,  '1621263764928-df1444c5e859'],
-    ['Chocolate Brownie',  'Desserts',  'Fudgy chocolate brownie, baked fresh today.',      65,  4.7, true,  true,  '1606313564200-e75d5e30476c'],
-    ['Chicken Burger',     'Burgers',   'Grilled chicken, lettuce and signature sauce.',   110,  4.4, false, false, '1568901346375-23c9450c58cd'],
-    ['Pepperoni Pizza',    'Pizza',     'Cheese pizza with smoky pepperoni slices.',       150,  4.5, false, false, '1565299624946-b28f40a0ae38'],
-    ['Idli Sambar',        'Breakfast', 'Soft steamed idlis with lentil sambar.',           45,  4.4, true,  true,  '1589301760014-d929f3979dbc'],
-    ['Mango Shake',        'Drinks',    'Thick chilled mango shake with almonds.',          55,  4.3, true,  false, '1623065422902-30a2d299bbe4'],
-  ].map((x, i) => ({
-    id: i + 1, name: x[0], category: x[1], description: x[2], price: x[3], rating: x[4],
-    vegetarian: x[5], available: x[6],
-    image: `https://images.unsplash.com/photo-${x[7]}?auto=format&fit=crop&w=700&q=80`,
-    ingredients: x[5] ? 'Fresh vegetables, herbs, spices and house sauce.' : 'Fresh ingredients, herbs, spices and house sauce.',
-  }));
-}
-
-// ─── Bootstrap ───────────────────────────────────────────────────────────────
-
 document.addEventListener('DOMContentLoaded', () => {
-  loadFoods();
   loadCart();
   bindEvents();
   renderCategories();
@@ -153,7 +116,6 @@ function items() {
     switch (state.sort) {
       case 'price-low':  return a.price - b.price;
       case 'price-high': return b.price - a.price;
-      case 'rating':     return b.rating - a.rating;
       case 'name':       return a.name.localeCompare(b.name);
       default:           return a.id - b.id;
     }
@@ -165,12 +127,12 @@ function items() {
 function renderCategories() {
   $('categories').innerHTML = CATEGORIES.map(c => `
     <button
-      data-category="${c}"
+      data-category="${escapeHtml(c)}"
       class="focus-ring shrink-0 rounded-full px-4 py-2 text-sm font-extrabold
              ${c === state.category
                ? 'bg-orange-600 text-white'
                : 'bg-orange-50 text-orange-800 hover:bg-orange-100'}"
-    >${c}</button>
+    >${escapeHtml(c)}</button>
   `).join('');
 
   $('categories').onclick = e => {
@@ -190,16 +152,15 @@ function renderFoodItems() {
     const a = items();
 
     $('result-count').textContent = `${a.length} item${a.length === 1 ? '' : 's'}`;
+    $('menu-error').classList.toggle('hidden', !window.CAMPUSBITE_MENU_ERROR);
 
     grid.innerHTML = a.length
       ? a.map(card).join('')
       : `<div class="col-span-full rounded-3xl border border-dashed border-orange-200 bg-white px-6 py-16 text-center">
            <div class="text-4xl">🍽️</div>
-           <h3 class="mt-4 font-display text-2xl font-bold">No food found</h3>
-           <p class="mt-2 text-stone-500">Try another search or choose a different category.</p>
-           <button data-reset class="focus-ring mt-5 rounded-full bg-orange-600 px-5 py-3 text-sm font-extrabold text-white">
-             Clear Filters
-           </button>
+           <h3 class="mt-4 font-display text-2xl font-bold">${FOOD_ITEMS.length ? 'No food found' : 'The menu is empty right now'}</h3>
+           <p class="mt-2 text-stone-500">${FOOD_ITEMS.length ? 'Try another search or choose a different category.' : 'Please check back soon for today&#39;s food options.'}</p>
+           ${FOOD_ITEMS.length ? '<button data-reset class="focus-ring mt-5 rounded-full bg-orange-600 px-5 py-3 text-sm font-extrabold text-white">Clear Filters</button>' : ''}
          </div>`;
 
     grid.querySelector('[data-reset]')?.addEventListener('click', resetFilters);
@@ -208,7 +169,22 @@ function renderFoodItems() {
   });
 }
 
+function escapeHtml(value) {
+  return String(value == null ? '' : value).replace(/[&<>"']/g, function (character) {
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[character];
+  });
+}
+
+function safeImage(value) {
+  var image = String(value || '').trim();
+  return /^(https?:\/\/|\/)/i.test(image) ? escapeHtml(image) : '';
+}
+
 function card(f) {
+  const name = escapeHtml(f.name);
+  const description = escapeHtml(f.description);
+  const category = escapeHtml(f.category);
+  const image = safeImage(f.image);
   const dietLabel      = f.vegetarian ? '● Vegetarian' : '● Non-vegetarian';
   const dietClass      = f.vegetarian ? 'text-green-700' : 'text-red-700';
   const unavailBadge   = !f.available
@@ -223,8 +199,7 @@ function card(f) {
     <article class="food-card group overflow-hidden rounded-3xl border border-orange-100 bg-white shadow-card">
       <button data-detail="${f.id}" class="focus-ring block w-full text-left">
         <div class="relative h-44 overflow-hidden bg-orange-100">
-          <img class="food-image h-full w-full object-cover"
-               src="${f.image}" alt="${f.name}" loading="lazy">
+          ${image ? `<img class="food-image h-full w-full object-cover" src="${image}" alt="${name}" loading="lazy">` : '<div class="h-full w-full"></div>'}
           <span class="absolute left-3 top-3 rounded-full bg-white/95 px-2.5 py-1
                        text-xs font-extrabold ${dietClass}">${dietLabel}</span>
           ${unavailBadge}
@@ -232,10 +207,10 @@ function card(f) {
       </button>
       <div class="flex min-h-[190px] flex-col p-4">
         <div class="flex items-start justify-between gap-2">
-          <h3 class="font-display text-lg font-bold text-ink">${f.name}</h3>
-          <span class="shrink-0 text-sm font-bold text-orange-600">★ ${f.rating}</span>
+          <h3 class="font-display text-lg font-bold text-ink">${name}</h3>
+          <span class="shrink-0 text-sm font-bold text-stone-500">${category}</span>
         </div>
-        <p class="mt-1 text-sm leading-relaxed text-stone-500">${f.description}</p>
+        <p class="mt-1 text-sm leading-relaxed text-stone-500">${description}</p>
         <div class="mt-auto flex items-center justify-between pt-4">
           <strong class="font-display text-xl text-ink">${money(f.price)}</strong>
           <button data-add="${f.id}" ${f.available ? '' : 'disabled'}
@@ -262,7 +237,12 @@ function gridClick(e) {
 
 function openModal(id) {
   const f = FOOD_ITEMS.find(x => x.id === id);
+  if (!f) return;
   state.quantity = 1;
+  const name = escapeHtml(f.name);
+  const description = escapeHtml(f.description);
+  const category = escapeHtml(f.category);
+  const image = safeImage(f.image);
 
   const dietLabel   = f.vegetarian ? '● Vegetarian' : '● Non-vegetarian';
   const dietClass   = f.vegetarian ? 'text-green-700' : 'text-red-700';
@@ -275,14 +255,14 @@ function openModal(id) {
       <button data-close
               class="focus-ring absolute right-3 top-3 z-10 h-10 w-10
                      rounded-full bg-white font-bold shadow">×</button>
-      <img src="${f.image}" alt="${f.name}" class="h-64 w-full object-cover sm:h-full">
+      ${image ? `<img src="${image}" alt="${name}" class="h-64 w-full object-cover sm:h-full">` : '<div class="h-64 bg-orange-100 sm:h-full"></div>'}
       <div class="p-6">
         <span class="text-sm font-extrabold ${dietClass}">${dietLabel}</span>
-        <h2 id="modal-title" class="mt-2 font-display text-3xl font-extrabold">${f.name}</h2>
-        <p class="mt-3 text-stone-500">${f.description}</p>
-        <p class="mt-3 text-sm text-stone-600"><b>Ingredients:</b> ${f.ingredients}</p>
+        <h2 id="modal-title" class="mt-2 font-display text-3xl font-extrabold">${name}</h2>
+        <p class="mt-3 text-stone-500">${description}</p>
+        <p class="mt-3 text-sm text-stone-600"><b>Category:</b> ${category}</p>
         <div class="mt-4 flex gap-4 text-sm font-bold">
-          <span>★ ${f.rating}</span>
+          <span>★ ${category}</span>
           <span class="${availClass}">${availLabel}</span>
         </div>
         <p class="mt-5 font-display text-3xl font-extrabold text-orange-700">${money(f.price)}</p>

@@ -1,3 +1,162 @@
+<?php
+session_start();
+require_once __DIR__ . '/db.php';
+
+if (empty($_SESSION['user_id'])) {
+    header('Location: login.php');
+    exit;
+}
+
+function escapeOutput($value)
+{
+    return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+}
+
+$checkoutError = '';
+$old = [
+    'fullName' => $_POST['fullName'] ?? ($_SESSION['user_name'] ?? ''),
+    'studentId' => $_POST['studentId'] ?? '',
+    'email' => $_POST['email'] ?? ($_SESSION['user_email'] ?? ''),
+    'phone' => $_POST['phone'] ?? '',
+    'instructions' => $_POST['instructions'] ?? '',
+];
+foreach ($old as $key => $value) {
+    if (!is_string($value)) {
+        $old[$key] = '';
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $name = trim($old['fullName']);
+    $studentId = trim($old['studentId']);
+    $email = trim($old['email']);
+    $phone = trim($old['phone']);
+    $instructions = trim($old['instructions']);
+    $pickupLocation = $_POST['pickupLocation'] ?? '';
+    $pickupTime = $_POST['pickupTime'] ?? '';
+    $paymentMethod = $_POST['paymentMethod'] ?? '';
+    $allowedLocations = ['Main Cafeteria', 'Food Court'];
+    $allowedTimes = ['ASAP', 'In 10 minutes', 'In 20 minutes', 'In 30 minutes'];
+    $cartJson = $_POST['cartData'] ?? '';
+    if (!is_string($cartJson)) {
+        $cartJson = '';
+    }
+    $cartItems = json_decode($cartJson, true);
+
+    if (strlen($name) < 2 || strlen($name) > 100) {
+        $checkoutError = 'Enter a name between 2 and 100 characters.';
+    } elseif (strlen($studentId) < 1 || strlen($studentId) > 50) {
+        $checkoutError = 'Enter a valid student ID.';
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 150) {
+        $checkoutError = 'Enter a valid email address.';
+    } elseif (!preg_match('/^[0-9+() -]{7,30}$/', $phone)) {
+        $checkoutError = 'Enter a valid phone number.';
+    } elseif (!in_array($pickupLocation, $allowedLocations, true)) {
+        $checkoutError = 'Choose a valid pickup location.';
+    } elseif (!in_array($pickupTime, $allowedTimes, true)) {
+        $checkoutError = 'Choose a valid pickup time.';
+    } elseif ($paymentMethod !== 'Pay at Counter') {
+        $checkoutError = 'Choose an available payment method.';
+    } elseif (strlen($instructions) > 2000) {
+        $checkoutError = 'Special instructions must be 2000 characters or fewer.';
+    } elseif (!is_array($cartItems) || count($cartItems) === 0) {
+        $checkoutError = 'Your cart is empty.';
+    }
+
+    if ($checkoutError === '') {
+        try {
+            $subtotalCents = 0;
+            $foodStatement = db()->prepare('SELECT price, available FROM foods WHERE id = ? LIMIT 1');
+
+            foreach ($cartItems as $item) {
+                if (!is_array($item)) {
+                    $checkoutError = 'The cart contains an invalid item.';
+                    break;
+                }
+                $foodId = filter_var($item['id'] ?? null, FILTER_VALIDATE_INT);
+            $quantity = filter_var($item['quantity'] ?? null, FILTER_VALIDATE_INT);
+
+            if (!$foodId || !$quantity || $quantity < 1 || $quantity > 99) {
+                $checkoutError = 'The cart contains an invalid item.';
+                break;
+            }
+
+            $foodStatement->bind_param('i', $foodId);
+            $foodStatement->execute();
+            $food = $foodStatement->get_result()->fetch_assoc();
+
+            if (!$food || !(bool) $food['available']) {
+                $checkoutError = 'A food in your cart is no longer available.';
+                break;
+            }
+
+            $subtotalCents += (int) round((float) $food['price'] * 100) * $quantity;
+            }
+            $foodStatement->close();
+        } catch (Exception $e) {
+            error_log('CampusBite cart validation failed: ' . $e->getMessage());
+            $checkoutError = 'We could not check your cart. Please try again.';
+        }
+    }
+
+    if ($checkoutError === '') {
+        $subtotal = $subtotalCents / 100;
+        $fee = 0.00;
+        $total = $subtotal + $fee;
+        $userId = (int) $_SESSION['user_id'];
+        $status = 'Pending';
+
+        try {
+            $orderNumber = '';
+            $checkStatement = db()->prepare('SELECT id FROM orders WHERE order_number = ? LIMIT 1');
+            for ($attempt = 0; $attempt < 5; $attempt++) {
+                $orderNumber = 'CB-' . date('YmdHis') . '-' . strtoupper(bin2hex(random_bytes(3)));
+                $checkStatement->bind_param('s', $orderNumber);
+                $checkStatement->execute();
+                if (!$checkStatement->get_result()->fetch_assoc()) {
+                    break;
+                }
+                $orderNumber = '';
+            }
+            $checkStatement->close();
+
+            if ($orderNumber === '') {
+                throw new Exception('Could not generate a unique order number.');
+            }
+
+            // Save order items in the same transaction when the order_items table is added.
+            $insert = db()->prepare(
+                'INSERT INTO orders (order_number, user_id, customer_name, student_id, customer_email, customer_phone, pickup_location, pickup_time, special_instructions, payment_method, subtotal, fee, total, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            );
+            $insert->bind_param(
+                'sissssssssddds',
+                $orderNumber,
+                $userId,
+                $name,
+                $studentId,
+                $email,
+                $phone,
+                $pickupLocation,
+                $pickupTime,
+                $instructions,
+                $paymentMethod,
+                $subtotal,
+                $fee,
+                $total,
+                $status
+            );
+            $insert->execute();
+            $insert->close();
+
+            header('Location: order-confirmation.php?order=' . urlencode($orderNumber));
+            exit;
+        } catch (Exception $e) {
+            error_log('CampusBite order save failed: ' . $e->getMessage());
+            $checkoutError = 'We could not save your order. Please try again.';
+        }
+    }
+}
+?>
 <!doctype html>
 <html lang="en">
 
@@ -102,7 +261,11 @@
             </nav>
         </section>
         <div id="checkout-content">
-            <form id="checkout-form" novalidate>
+            <form id="checkout-form" method="post" action="checkout.php" novalidate>
+                <input type="hidden" name="cartData" id="cart-data" value="">
+                <?php if ($checkoutError !== ''): ?>
+                    <p class="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700" role="alert"><?= escapeOutput($checkoutError) ?></p>
+                <?php endif; ?>
                 <div class="grid gap-8 lg:grid-cols-3">
                     <div class="space-y-6 lg:col-span-2">
                         <section class="rounded-2xl border border-orange-100 bg-white p-5 shadow-card sm:p-6">
@@ -111,7 +274,7 @@
                                 <div>
                                     <label for="full-name" class="block text-sm font-bold text-stone-600">Full
                                         Name</label>
-                                    <input id="full-name" name="fullName" type="text" required autocomplete="name"
+                                    <input id="full-name" name="fullName" type="text" required autocomplete="name" value="<?= escapeOutput($old['fullName']) ?>"
                                         class="focus-ring mt-1 w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm outline-none"
                                         aria-describedby="full-name-error">
                                     <p id="full-name-error" class="mt-1 hidden text-xs font-bold text-red-600"
@@ -120,7 +283,7 @@
                                 <div>
                                     <label for="student-id" class="block text-sm font-bold text-stone-600">Student
                                         ID</label>
-                                    <input id="student-id" name="studentId" type="text" required
+                                    <input id="student-id" name="studentId" type="text" required value="<?= escapeOutput($old['studentId']) ?>"
                                         class="focus-ring mt-1 w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm outline-none"
                                         aria-describedby="student-id-error">
                                     <p id="student-id-error" class="mt-1 hidden text-xs font-bold text-red-600"
@@ -129,7 +292,7 @@
                                 <div>
                                     <label for="email" class="block text-sm font-bold text-stone-600">College
                                         Email</label>
-                                    <input id="email" name="email" type="email" required autocomplete="email"
+                                    <input id="email" name="email" type="email" required autocomplete="email" value="<?= escapeOutput($old['email']) ?>"
                                         class="focus-ring mt-1 w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm outline-none"
                                         aria-describedby="email-error">
                                     <p id="email-error" class="mt-1 hidden text-xs font-bold text-red-600" role="alert">
@@ -138,7 +301,7 @@
                                 <div>
                                     <label for="phone" class="block text-sm font-bold text-stone-600">Phone
                                         Number</label>
-                                    <input id="phone" name="phone" type="tel" required autocomplete="tel"
+                                    <input id="phone" name="phone" type="tel" required autocomplete="tel" value="<?= escapeOutput($old['phone']) ?>"
                                         class="focus-ring mt-1 w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm outline-none"
                                         aria-describedby="phone-error">
                                     <p id="phone-error" class="mt-1 hidden text-xs font-bold text-red-600" role="alert">
@@ -204,7 +367,7 @@
                             <label for="instructions" class="sr-only">Special Instructions</label>
                             <textarea id="instructions" name="instructions" rows="3"
                                 placeholder="Anything the cafeteria should know? (e.g. less spicy, no onions, extra sauce)"
-                                class="focus-ring mt-3 w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm outline-none placeholder:text-stone-400"></textarea>
+                                class="focus-ring mt-3 w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm outline-none placeholder:text-stone-400"><?= escapeOutput($old['instructions']) ?></textarea>
                             <p class="mt-1 text-xs text-stone-400">Optional</p>
                         </section>
                         <section class="rounded-2xl border border-orange-100 bg-white p-5 shadow-card sm:p-6">

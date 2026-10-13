@@ -1,3 +1,45 @@
+<?php
+session_start();
+require_once __DIR__ . '/db.php';
+
+if (empty($_SESSION['user_id'])) {
+    header('Location: login.php');
+    exit;
+}
+
+$orders = [];
+try {
+    $statement = db()->prepare('SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC');
+    $userId = (int) $_SESSION['user_id'];
+    $statement->bind_param('i', $userId);
+    $statement->execute();
+    $result = $statement->get_result();
+
+    while ($row = $result->fetch_assoc()) {
+        $orders[] = [
+            'orderId' => $row['order_number'],
+            'createdAt' => $row['created_at'],
+            'customer' => ['name' => $row['customer_name'], 'studentId' => $row['student_id'], 'email' => $row['customer_email'], 'phone' => $row['customer_phone']],
+            'pickup' => ['location' => $row['pickup_location'], 'time' => $row['pickup_time']],
+            'specialInstructions' => $row['special_instructions'],
+            'paymentMethod' => $row['payment_method'],
+            'items' => [],
+            'subtotal' => (float) $row['subtotal'],
+            'convenienceFee' => (float) $row['fee'],
+            'total' => (float) $row['total'],
+            'status' => $row['status'],
+        ];
+    }
+    $statement->close();
+} catch (Exception $e) {
+    error_log('CampusBite order list failed: ' . $e->getMessage());
+}
+
+$ordersJson = json_encode($orders, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+if ($ordersJson === false) {
+    $ordersJson = '[]';
+}
+?>
 <!doctype html>
 <html lang="en">
 
@@ -110,6 +152,7 @@
     <div id="toast"
         class="pointer-events-none fixed bottom-5 left-1/2 z-[60] hidden -translate-x-1/2 rounded-full bg-ink px-5 py-3 text-sm font-bold text-white shadow-xl"
         role="status" aria-live="polite"></div>
+    <script>window.CAMPUSBITE_ORDERS = <?= $ordersJson ?>;</script>
     <script src="js/orders.js"></script>
 </body>
 

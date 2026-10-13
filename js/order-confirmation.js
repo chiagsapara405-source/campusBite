@@ -1,7 +1,6 @@
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const CART_KEY   = 'campusbite-cart-v1';
-const LATEST_KEY = 'campusbite_latest_order';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -15,6 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
   bindEvents();
   const order = loadLatestOrder();
   if (order) {
+    localStorage.setItem(CART_KEY, '[]');
+    updateCartCount();
     renderOrderDetails(order);
   } else {
     handleMissingOrder();
@@ -61,15 +62,7 @@ function updateCartCount() {
 // ─── Load Order ──────────────────────────────────────────────────────────────
 
 function loadLatestOrder() {
-  try {
-    const raw = localStorage.getItem(LATEST_KEY);
-    if (!raw) return null;
-    const order = JSON.parse(raw);
-    if (!order || !order.orderId || !order.items) return null;
-    return order;
-  } catch {
-    return null;
-  }
+  return window.CAMPUSBITE_ORDER || null;
 }
 
 // ─── Render ──────────────────────────────────────────────────────────────────
@@ -193,6 +186,10 @@ function renderOrderStatus(steps) {
 // ─── Order Items ─────────────────────────────────────────────────────────────
 
 function renderOrderItems(order) {
+  if (!order.items || order.items.length === 0) {
+    return `<p class="mt-3 text-sm text-stone-500">Item details will be available in a future update. Your saved totals are shown below.</p>${renderOrderTotals(order)}`;
+  }
+
   const itemsHtml = order.items.map(line => `
     <div class="flex items-center justify-between py-2">
       <div class="min-w-0">
@@ -203,8 +200,11 @@ function renderOrderItems(order) {
     </div>
   `).join('');
 
+  return `<div class="mt-3 divide-y divide-stone-100">${itemsHtml}</div>${renderOrderTotals(order)}`;
+}
+
+function renderOrderTotals(order) {
   return `
-    <div class="mt-3 divide-y divide-stone-100">${itemsHtml}</div>
     <dl class="mt-4 space-y-2 border-t border-stone-200 pt-4 text-sm">
       <div class="flex justify-between">
         <dt class="text-stone-500">Subtotal</dt>

@@ -4,8 +4,6 @@ let FOOD_ITEMS = [];
 
 const FOODS_KEY  = 'campusbite_foods';
 const CART_KEY   = 'campusbite-cart-v1';
-const ORDERS_KEY = 'campusbite_orders';
-const LATEST_KEY = 'campusbite_latest_order';
 
 let cart = [];
 
@@ -312,67 +310,6 @@ function clearFieldError(el) {
 
 // ─── Order ID ────────────────────────────────────────────────────────────────
 
-function generateOrderId() {
-  const num = Math.floor(1000 + Math.random() * 9000);
-  return `CB-${num}`;
-}
-
-// ─── Order Creation ──────────────────────────────────────────────────────────
-
-function createOrder() {
-  const form = $('checkout-form');
-  const { subtotal, fee, total } = calculateTotals();
-
-  return {
-    orderId:    generateOrderId(),
-    createdAt:  new Date().toISOString(),
-    customer: {
-      name:      form.fullName.value.trim(),
-      studentId: form.studentId.value.trim(),
-      email:     form.email.value.trim(),
-      phone:     form.phone.value.trim(),
-    },
-    pickup: {
-      location: form.pickupLocation.value,
-      time:     form.pickupTime.value,
-    },
-    specialInstructions: form.instructions.value.trim(),
-    paymentMethod:       form.paymentMethod.value,
-    items:               cart.map(x => ({
-      id:       x.id,
-      name:     x.name,
-      price:    x.price,
-      quantity: x.quantity,
-    })),
-    subtotal,
-    convenienceFee: fee,
-    total,
-    status: 'Pending',
-  };
-}
-
-function saveOrder(order) {
-  let orders = [];
-  try {
-    const raw = localStorage.getItem(ORDERS_KEY);
-    orders = raw ? JSON.parse(raw) : [];
-    if (!Array.isArray(orders)) orders = [];
-  } catch {
-    orders = [];
-  }
-
-  orders.push(order);
-  localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
-  localStorage.setItem(LATEST_KEY, JSON.stringify(order));
-}
-
-function clearCart() {
-  cart = [];
-  localStorage.setItem(CART_KEY, JSON.stringify(cart));
-}
-
-// ─── Place Order ─────────────────────────────────────────────────────────────
-
 function placeOrder() {
   if (!validateForm()) return;
 
@@ -380,12 +317,8 @@ function placeOrder() {
   btn.disabled    = true;
   btn.textContent = 'Placing Order...';
 
-  setTimeout(() => {
-    const order = createOrder();
-    saveOrder(order);
-    clearCart();
-    window.location.href = 'order-confirmation.php';
-  }, 1200);
+  $('cart-data').value = JSON.stringify(cart);
+  $('checkout-form').submit();
 }
 
 // ─── Toast ───────────────────────────────────────────────────────────────────

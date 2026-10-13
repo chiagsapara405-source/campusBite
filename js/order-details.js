@@ -139,15 +139,8 @@ function getOrderIdFromURL() {
 }
 
 function loadOrder(id) {
-  if (!id) return null;
-  try {
-    const raw = localStorage.getItem(ORDERS_KEY);
-    const orders = raw ? JSON.parse(raw) : [];
-    if (!Array.isArray(orders)) return null;
-    return orders.find(o => o && o.orderId === id) || null;
-  } catch {
-    return null;
-  }
+  if (!id || !window.CAMPUSBITE_ORDER) return null;
+  return window.CAMPUSBITE_ORDER.orderId === id ? window.CAMPUSBITE_ORDER : null;
 }
 
 function saveOrders(orders) {
@@ -203,11 +196,11 @@ function renderOrder(order) {
          class="focus-ring inline-block rounded-full bg-orange-600 px-6 py-3 text-center text-sm font-extrabold text-white hover:bg-orange-700">
         Back to My Orders
       </a>
-      <button id="order-again-btn"
+      ${order.items && order.items.length ? `<button id="order-again-btn"
               class="focus-ring inline-block rounded-full border border-orange-600 bg-white px-6 py-3 text-center text-sm font-extrabold text-orange-600 hover:bg-orange-50">
         Order Again
-      </button>
-      ${status === 'Pending' ? `
+      </button>` : ''}
+      ${status === 'Pending' && order.items && order.items.length ? `
         <button id="cancel-order-btn"
                 class="focus-ring inline-block rounded-full border border-red-300 bg-white px-6 py-3 text-center text-sm font-bold text-red-600 hover:bg-red-50">
           Cancel Order
@@ -216,7 +209,7 @@ function renderOrder(order) {
     </div>
   `;
 
-  $('order-again-btn').onclick = handleOrderAgain;
+  if ($('order-again-btn')) $('order-again-btn').onclick = handleOrderAgain;
   if ($('cancel-order-btn')) {
     $('cancel-order-btn').onclick = openModal;
   }
@@ -285,11 +278,7 @@ function renderCancelledState() {
 // ─── Order Items ─────────────────────────────────────────────────────────────
 
 function renderOrderItems(order) {
-  if (!order.items || !order.items.length) {
-    return '<p class="mt-3 text-sm text-stone-500">No items in this order.</p>';
-  }
-
-  const itemsHtml = order.items.map(line => {
+  const itemsHtml = order.items && order.items.length ? order.items.map(line => {
     const food = foodById(line.id);
     const img  = food?.image || '';
     return `
@@ -306,7 +295,7 @@ function renderOrderItems(order) {
         <p class="shrink-0 text-sm font-extrabold text-ink">${money(line.price * line.quantity)}</p>
       </div>
     `;
-  }).join('');
+  }).join('') : '<p class="mt-3 text-sm text-stone-500">Item details will be available in a future update.</p>';
 
   return `
     <div class="mt-3 divide-y divide-stone-100">${itemsHtml}</div>

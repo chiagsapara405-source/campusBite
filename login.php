@@ -1,4 +1,42 @@
-<!DOCTYPE html>
+<?php
+require_once __DIR__ . '/db.php';
+
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
+
+$errors = [];
+$old    = ['email' => trim($_POST['email'] ?? '')];
+$notice = isset($_GET['registered']) ? 'Account created successfully. Please sign in.' : null;
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $password = (string) ($_POST['password'] ?? '');
+
+    if (!filter_var($old['email'], FILTER_VALIDATE_EMAIL)) { $errors['email'] = 'Please enter a valid college email address.'; }
+    if (strlen($password) < 6)                             { $errors['password'] = 'Password must be at least 6 characters.'; }
+
+    if (!$errors) {
+        $email = strtolower($old['email']);
+        $stmt  = db()->prepare('SELECT id, name, email, password_hash, role FROM users WHERE email = ? LIMIT 1');
+        $stmt->bind_param('s', $email);
+        $stmt->execute();
+        $user = $stmt->get_result()->fetch_assoc();
+        if (!$user || !password_verify($password, $user['password_hash'])) {
+            $errors['email'] = 'Email or password is incorrect. Please try again.';
+        }
+    }
+
+    if (!$errors) {
+        session_regenerate_id(true);
+        $_SESSION['user_id']    = (int) $user['id'];
+        $_SESSION['user_name']  = $user['name'];
+        $_SESSION['user_email'] = $user['email'];
+        $_SESSION['role']       = $user['role'];
+
+        $redirect = $user['role'] === 'admin' ? 'admin/admin-dashboard.php' : 'menu.php';
+        header('Location: ' . $redirect);
+        exit;
+    }
+}
+?><!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -106,28 +144,26 @@
             <p class="mt-3 leading-relaxed text-stone-500">Sign in to continue ordering your favorite campus food.</p>
           </div>
 
-          <form id="login-form" class="mt-8 space-y-5" novalidate>
+                    <form id="login-form" class="mt-8 space-y-5" method="post" action="login.php" novalidate><?php if ($notice !== null): ?><p class="mb-1 rounded-xl bg-green-50 text-green-800 px-3.5 py-3 text-sm font-bold" role="status"><?php echo htmlspecialchars($notice, ENT_QUOTES, 'UTF-8'); ?></p><?php endif; ?>
             <div>
               <label for="email" class="mb-2 block text-sm font-extrabold text-ink">Student email</label>
-              <input id="email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="you@college.edu" aria-describedby="email-error" class="field block w-full rounded-xl border border-stone-200 bg-white px-4 py-3.5 text-base text-ink placeholder:text-stone-400 transition" />
-              <p id="email-error" class="mt-2 hidden items-center gap-1.5 text-sm font-bold text-red-600" role="alert"></p>
+              <input id="email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="you@college.edu" value="<?php echo htmlspecialchars($old['email'], ENT_QUOTES, 'UTF-8'); ?>" aria-describedby="email-error"<?php if (isset($errors['email'])) echo ' aria-invalid="true"'; ?> class="field block w-full rounded-xl border border-stone-200 bg-white px-4 py-3.5 text-base text-ink placeholder:text-stone-400 transition" />
+              <p id="email-error" class="<?php echo isset($errors['email']) ? '' : 'hidden'; ?> mt-2 items-center gap-1.5 text-sm font-bold text-red-600" role="alert"><?php echo htmlspecialchars($errors['email'] ?? '', ENT_QUOTES, 'UTF-8'); ?></p>
             </div>
             <div>
-              <div class="mb-2 flex items-center justify-between gap-3"><label for="password" class="block text-sm font-extrabold text-ink">Password</label><button id="forgot-password" type="button" class="text-sm font-extrabold text-orange-700 underline-offset-4 hover:underline focus:outline-none focus:ring-2 focus:ring-orange-600 focus:ring-offset-2">Forgot password?</button></div>
-              <div class="relative"><input id="password" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" aria-describedby="password-error" class="field block w-full rounded-xl border border-stone-200 bg-white px-4 py-3.5 pr-28 text-base text-ink placeholder:text-stone-400 transition" /><button id="password-toggle" type="button" aria-controls="password" aria-label="Show password" class="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg px-3 py-2 text-sm font-extrabold text-orange-700 transition hover:bg-orange-50 focus:outline-none focus:ring-2 focus:ring-orange-600">Show</button></div>
-              <p id="password-error" class="mt-2 hidden items-center gap-1.5 text-sm font-bold text-red-600" role="alert"></p>
+              <label for="password" class="mb-2 block text-sm font-extrabold text-ink">Password</label>
+              <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" aria-describedby="password-error"<?php if (isset($errors['password'])) echo ' aria-invalid="true"'; ?> class="field block w-full rounded-xl border border-stone-200 bg-white px-4 py-3.5 text-base text-ink placeholder:text-stone-400 transition" />
+              <p id="password-error" class="<?php echo isset($errors['password']) ? '' : 'hidden'; ?> mt-2 items-center gap-1.5 text-sm font-bold text-red-600" role="alert"><?php echo htmlspecialchars($errors['password'] ?? '', ENT_QUOTES, 'UTF-8'); ?></p>
             </div>
-            <label class="flex w-fit cursor-pointer items-center gap-2.5 text-sm font-bold text-stone-600"><input id="remember-me" type="checkbox" class="h-4 w-4 rounded border-stone-300 text-orange-600 focus:ring-orange-500" /><span>Remember me</span></label>
-            <p id="forgot-message" class="hidden rounded-xl border border-orange-200 bg-orange-50 px-3.5 py-3 text-sm font-semibold leading-relaxed text-orange-800" role="status">Password recovery will be available in a future version.</p>
-            <p id="form-status" class="hidden rounded-xl px-3.5 py-3 text-sm font-bold" role="status" aria-live="polite"></p>
             <button id="submit-button" type="submit" class="flex w-full items-center justify-center gap-2 rounded-xl bg-orange-600 px-5 py-3.5 text-base font-extrabold text-white shadow-lg shadow-orange-600/20 transition hover:bg-orange-700 active:scale-[.98] disabled:cursor-not-allowed disabled:bg-orange-300 disabled:shadow-none focus:outline-none focus:ring-2 focus:ring-orange-600 focus:ring-offset-2">Sign In</button>
           </form>
           <p class="mt-7 text-center text-sm font-semibold text-stone-500">Don't have an account? <a href="register.php" class="font-extrabold text-orange-700 underline-offset-4 hover:underline focus:outline-none focus:ring-2 focus:ring-orange-600 focus:ring-offset-2">Create one</a></p>
-          <p class="mt-3 text-center text-xs text-stone-400">Admin? Use an email containing <strong class="text-stone-500">admin</strong> (e.g. admin@campus.edu) to access the <a href="admin/admin-dashboard.php" class="font-bold text-orange-600 hover:underline">dashboard</a>.</p>
+          <p class="mt-3 text-center text-xs text-stone-400">Demo admin: <strong class="text-stone-500">admin@campus.edu</strong> / <strong class="text-stone-500">Admin@123</strong> opens the <a href="admin/admin-dashboard.php" class="font-bold text-orange-600 hover:underline">dashboard</a>.</p>
         </div>
       </section>
     </div>
   </main>
-  <script src="js/login.js"></script>
+  
 </body>
 </html>
+ 

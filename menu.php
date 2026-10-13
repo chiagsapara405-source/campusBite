@@ -1,3 +1,43 @@
+<?php
+require_once __DIR__ . '/db.php';
+
+$foods = [];
+$menuError = false;
+
+try {
+    $statement = db()->prepare(
+        'SELECT id, name, description, category, price, image, vegetarian, available FROM foods ORDER BY id'
+    );
+    $statement->execute();
+    $result = $statement->get_result();
+
+    while ($food = $result->fetch_assoc()) {
+        $foods[] = [
+            'id' => (int) $food['id'],
+            'name' => $food['name'],
+            'description' => $food['description'],
+            'category' => $food['category'],
+            'price' => (float) $food['price'],
+            'image' => $food['image'],
+            'vegetarian' => (bool) $food['vegetarian'],
+            'available' => (bool) $food['available'],
+        ];
+    }
+    $statement->close();
+} catch (Exception $e) {
+    error_log('CampusBite menu query failed: ' . $e->getMessage());
+    $menuError = true;
+}
+
+$foodsJson = json_encode(
+    $foods,
+    JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE
+);
+if ($foodsJson === false) {
+    $foodsJson = '[]';
+    $menuError = true;
+}
+?>
 <!doctype html>
 <html lang="en">
 
@@ -144,7 +184,6 @@
                             <option value="recommended">Recommended</option>
                             <option value="price-low">Price: Low to High</option>
                             <option value="price-high">Price: High to Low</option>
-                            <option value="rating">Rating: High to Low</option>
                             <option value="name">Name: A-Z</option>
                         </select></label></div>
             </div>
@@ -161,6 +200,7 @@
                 <div class="h-[350px] animate-pulse rounded-3xl bg-orange-100"></div>
                 <div class="h-[350px] animate-pulse rounded-3xl bg-orange-100"></div>
             </div>
+            <p id="menu-error" class="mt-4 hidden rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-800" role="alert">The menu is temporarily unavailable. Please try again later.</p>
         </section>
     </main>
     <aside id="cart-summary"
@@ -181,6 +221,10 @@
     <div id="toast"
         class="pointer-events-none fixed bottom-5 left-1/2 z-[60] hidden -translate-x-1/2 rounded-full bg-ink px-5 py-3 text-sm font-bold text-white shadow-xl"
         role="status" aria-live="polite"></div>
+    <script>
+        window.CAMPUSBITE_FOODS = <?= $foodsJson ?>;
+        window.CAMPUSBITE_MENU_ERROR = <?= $menuError ? 'true' : 'false' ?>;
+    </script>
     <script src="js/menu.js"></script>
 </body>
 

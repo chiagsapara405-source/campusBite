@@ -72,14 +72,7 @@ function bindEvents() {
 // ─── Data ────────────────────────────────────────────────────────────────────
 
 function loadOrders() {
-  try {
-    const raw = localStorage.getItem(ORDERS_KEY);
-    orders = raw ? JSON.parse(raw) : [];
-    if (!Array.isArray(orders)) orders = [];
-    orders = orders.filter(o => o && o.orderId && Array.isArray(o.items));
-  } catch {
-    orders = [];
-  }
+  orders = Array.isArray(window.CAMPUSBITE_ADMIN_ORDERS) ? window.CAMPUSBITE_ADMIN_ORDERS : [];
 }
 
 // ─── Summary Cards ───────────────────────────────────────────────────────────

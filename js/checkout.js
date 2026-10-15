@@ -10,6 +10,10 @@ let cart = [];
 // ─── Load Foods ────────────────────────────────────────────────────────────
 
 function loadFoods() {
+  if (Array.isArray(window.CAMPUSBITE_FOODS)) {
+    FOOD_ITEMS = window.CAMPUSBITE_FOODS;
+    return;
+  }
   try {
     const raw = localStorage.getItem(FOODS_KEY);
     if (raw) {

@@ -7,6 +7,31 @@ if (empty($_SESSION['user_id'])) {
     exit;
 }
 
+if (empty($_SESSION['order_action_token'])) {
+    $_SESSION['order_action_token'] = bin2hex(random_bytes(16));
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'cancel') {
+    $postedOrderNumber = $_POST['orderNumber'] ?? '';
+    $postedToken = $_POST['actionToken'] ?? '';
+    if (is_string($postedOrderNumber) && is_string($postedToken)
+        && hash_equals($_SESSION['order_action_token'], $postedToken)) {
+        try {
+            $cancel = db()->prepare(
+                "UPDATE orders SET status = 'Cancelled' WHERE order_number = ? AND user_id = ? AND status = 'Pending'"
+            );
+            $userId = (int) $_SESSION['user_id'];
+            $cancel->bind_param('si', $postedOrderNumber, $userId);
+            $cancel->execute();
+            $cancel->close();
+        } catch (Exception $e) {
+            error_log('CampusBite order cancellation failed: ' . $e->getMessage());
+        }
+    }
+    header('Location: order-details.php?id=' . urlencode(is_string($postedOrderNumber) ? $postedOrderNumber : ''));
+    exit;
+}
+
 $order = null;
 $orderNumber = isset($_GET['id']) && is_string($_GET['id']) ? trim($_GET['id']) : '';
 
@@ -19,6 +44,26 @@ if ($orderNumber !== '') {
         $row = $statement->get_result()->fetch_assoc();
 
         if ($row) {
+            $orderItems = [];
+            $itemStatement = db()->prepare(
+                'SELECT food_id, food_name, food_image, quantity, unit_price, item_total FROM order_items WHERE order_id = ? ORDER BY id'
+            );
+            $orderId = (int) $row['id'];
+            $itemStatement->bind_param('i', $orderId);
+            $itemStatement->execute();
+            $itemResult = $itemStatement->get_result();
+            while ($item = $itemResult->fetch_assoc()) {
+                $orderItems[] = [
+                    'id' => $item['food_id'] === null ? null : (int) $item['food_id'],
+                    'name' => $item['food_name'],
+                    'image' => $item['food_image'],
+                    'quantity' => (int) $item['quantity'],
+                    'price' => (float) $item['unit_price'],
+                    'total' => (float) $item['item_total'],
+                ];
+            }
+            $itemStatement->close();
+
             $order = [
                 'orderId' => $row['order_number'],
                 'createdAt' => $row['created_at'],
@@ -26,7 +71,7 @@ if ($orderNumber !== '') {
                 'pickup' => ['location' => $row['pickup_location'], 'time' => $row['pickup_time']],
                 'specialInstructions' => $row['special_instructions'],
                 'paymentMethod' => $row['payment_method'],
-                'items' => [],
+                'items' => $orderItems,
                 'subtotal' => (float) $row['subtotal'],
                 'convenienceFee' => (float) $row['fee'],
                 'total' => (float) $row['total'],
@@ -43,6 +88,20 @@ $orderJson = json_encode($order, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | J
 if ($orderJson === false) {
     $orderJson = 'null';
 }
+$orderFoods = [];
+try {
+    $foodResult = db()->query('SELECT id, name, price, image, available FROM foods ORDER BY id');
+    while ($food = $foodResult->fetch_assoc()) {
+        $orderFoods[] = [
+            'id' => (int) $food['id'], 'name' => $food['name'], 'price' => (float) $food['price'],
+            'image' => $food['image'], 'available' => (bool) $food['available'],
+        ];
+    }
+} catch (Exception $e) {
+    error_log('CampusBite order again menu lookup failed: ' . $e->getMessage());
+}
+$orderFoodsJson = json_encode($orderFoods, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE);
+if ($orderFoodsJson === false) { $orderFoodsJson = '[]'; }
 ?>
 <!doctype html>
 <html lang="en">
@@ -145,7 +204,11 @@ if ($orderJson === false) {
     <div id="toast"
         class="pointer-events-none fixed bottom-5 left-1/2 z-[60] hidden -translate-x-1/2 rounded-full bg-ink px-5 py-3 text-sm font-bold text-white shadow-xl"
         role="status" aria-live="polite"></div>
-    <script>window.CAMPUSBITE_ORDER = <?= $orderJson ?>;</script>
+    <script>
+        window.CAMPUSBITE_ORDER = <?= $orderJson ?>;
+        window.CAMPUSBITE_FOODS = <?= $orderFoodsJson ?>;
+        window.CAMPUSBITE_ACTION_TOKEN = <?= json_encode($_SESSION['order_action_token'], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+    </script>
     <script src="js/order-details.js"></script>
 </body>
 

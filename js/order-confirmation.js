@@ -196,7 +196,7 @@ function renderOrderItems(order) {
         <p class="text-sm font-bold text-ink">${escapeHtml(line.name)}</p>
         <p class="text-xs text-stone-500">${line.quantity} × ${money(line.price)}</p>
       </div>
-      <p class="shrink-0 text-sm font-extrabold text-ink">${money(line.price * line.quantity)}</p>
+      <p class="shrink-0 text-sm font-extrabold text-ink">${money(line.total == null ? line.price * line.quantity : line.total)}</p>
     </div>
   `).join('');
 

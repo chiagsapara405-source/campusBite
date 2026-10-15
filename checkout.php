@@ -7,6 +7,10 @@ if (empty($_SESSION['user_id'])) {
     exit;
 }
 
+if (empty($_SESSION['checkout_token'])) {
+    $_SESSION['checkout_token'] = bin2hex(random_bytes(16));
+}
+
 function escapeOutput($value)
 {
     return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
@@ -35,15 +39,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pickupLocation = $_POST['pickupLocation'] ?? '';
     $pickupTime = $_POST['pickupTime'] ?? '';
     $paymentMethod = $_POST['paymentMethod'] ?? '';
-    $allowedLocations = ['Main Cafeteria', 'Food Court'];
-    $allowedTimes = ['ASAP', 'In 10 minutes', 'In 20 minutes', 'In 30 minutes'];
+    $submittedToken = $_POST['checkoutToken'] ?? '';
     $cartJson = $_POST['cartData'] ?? '';
+    if (!is_string($submittedToken)) {
+        $submittedToken = '';
+    }
     if (!is_string($cartJson)) {
         $cartJson = '';
     }
     $cartItems = json_decode($cartJson, true);
+    $allowedLocations = ['Main Cafeteria', 'Food Court'];
+    $allowedTimes = ['ASAP', 'In 10 minutes', 'In 20 minutes', 'In 30 minutes'];
 
-    if (strlen($name) < 2 || strlen($name) > 100) {
+    if (!hash_equals($_SESSION['checkout_token'], $submittedToken)) {
+        $checkoutError = 'This checkout form has already been submitted. Please reload the page.';
+    } elseif (strlen($name) < 2 || strlen($name) > 100) {
         $checkoutError = 'Enter a name between 2 and 100 characters.';
     } elseif (strlen($studentId) < 1 || strlen($studentId) > 50) {
         $checkoutError = 'Enter a valid student ID.';
@@ -64,98 +74,160 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($checkoutError === '') {
+        $transactionStarted = false;
+
         try {
+            $connection = db();
+            $connection->begin_transaction();
+            $transactionStarted = true;
+            $itemsToSave = [];
             $subtotalCents = 0;
-            $foodStatement = db()->prepare('SELECT price, available FROM foods WHERE id = ? LIMIT 1');
+            $foodStatement = $connection->prepare(
+                'SELECT name, image, price, available FROM foods WHERE id = ? LIMIT 1 FOR UPDATE'
+            );
 
             foreach ($cartItems as $item) {
                 if (!is_array($item)) {
                     $checkoutError = 'The cart contains an invalid item.';
                     break;
                 }
+
                 $foodId = filter_var($item['id'] ?? null, FILTER_VALIDATE_INT);
-            $quantity = filter_var($item['quantity'] ?? null, FILTER_VALIDATE_INT);
-
-            if (!$foodId || !$quantity || $quantity < 1 || $quantity > 99) {
-                $checkoutError = 'The cart contains an invalid item.';
-                break;
-            }
-
-            $foodStatement->bind_param('i', $foodId);
-            $foodStatement->execute();
-            $food = $foodStatement->get_result()->fetch_assoc();
-
-            if (!$food || !(bool) $food['available']) {
-                $checkoutError = 'A food in your cart is no longer available.';
-                break;
-            }
-
-            $subtotalCents += (int) round((float) $food['price'] * 100) * $quantity;
-            }
-            $foodStatement->close();
-        } catch (Exception $e) {
-            error_log('CampusBite cart validation failed: ' . $e->getMessage());
-            $checkoutError = 'We could not check your cart. Please try again.';
-        }
-    }
-
-    if ($checkoutError === '') {
-        $subtotal = $subtotalCents / 100;
-        $fee = 0.00;
-        $total = $subtotal + $fee;
-        $userId = (int) $_SESSION['user_id'];
-        $status = 'Pending';
-
-        try {
-            $orderNumber = '';
-            $checkStatement = db()->prepare('SELECT id FROM orders WHERE order_number = ? LIMIT 1');
-            for ($attempt = 0; $attempt < 5; $attempt++) {
-                $orderNumber = 'CB-' . date('YmdHis') . '-' . strtoupper(bin2hex(random_bytes(3)));
-                $checkStatement->bind_param('s', $orderNumber);
-                $checkStatement->execute();
-                if (!$checkStatement->get_result()->fetch_assoc()) {
+                $quantity = filter_var($item['quantity'] ?? null, FILTER_VALIDATE_INT);
+                if (!$foodId || !$quantity || $quantity < 1 || $quantity > 99) {
+                    $checkoutError = 'The cart contains an invalid item.';
                     break;
                 }
+
+                $foodStatement->bind_param('i', $foodId);
+                $foodStatement->execute();
+                $food = $foodStatement->get_result()->fetch_assoc();
+                if (!$food || !(bool) $food['available']) {
+                    $checkoutError = 'A food in your cart is no longer available.';
+                    break;
+                }
+
+                $unitPriceCents = (int) round((float) $food['price'] * 100);
+                $itemTotalCents = $unitPriceCents * $quantity;
+                $subtotalCents += $itemTotalCents;
+                $itemsToSave[] = [
+                    'foodId' => (int) $foodId,
+                    'name' => $food['name'],
+                    'image' => $food['image'],
+                    'quantity' => (int) $quantity,
+                    'unitPriceCents' => $unitPriceCents,
+                    'itemTotalCents' => $itemTotalCents,
+                ];
+            }
+            $foodStatement->close();
+
+            if ($subtotalCents > 9999999999) {
+                $checkoutError = 'The cart total is too large to place this order.';
+            }
+
+            if ($checkoutError !== '') {
+                $connection->rollback();
+                $transactionStarted = false;
+            } else {
+                $subtotal = $subtotalCents / 100;
+                $fee = 0.00;
+                $total = $subtotal + $fee;
+                $userId = (int) $_SESSION['user_id'];
+                $status = 'Pending';
                 $orderNumber = '';
+                $numberCheck = $connection->prepare('SELECT id FROM orders WHERE order_number = ? LIMIT 1');
+                for ($attempt = 0; $attempt < 5; $attempt++) {
+                    $orderNumber = 'CB-' . date('YmdHis') . '-' . strtoupper(bin2hex(random_bytes(3)));
+                    $numberCheck->bind_param('s', $orderNumber);
+                    $numberCheck->execute();
+                    if (!$numberCheck->get_result()->fetch_assoc()) {
+                        break;
+                    }
+                    $orderNumber = '';
+                }
+                $numberCheck->close();
+                if ($orderNumber === '') {
+                    throw new Exception('Could not generate a unique order number.');
+                }
+                $orderInsert = $connection->prepare(
+                    'INSERT INTO orders (order_number, user_id, customer_name, student_id, customer_email, customer_phone, pickup_location, pickup_time, special_instructions, payment_method, subtotal, fee, total, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                );
+                $orderInsert->bind_param(
+                    'sissssssssddds',
+                    $orderNumber,
+                    $userId,
+                    $name,
+                    $studentId,
+                    $email,
+                    $phone,
+                    $pickupLocation,
+                    $pickupTime,
+                    $instructions,
+                    $paymentMethod,
+                    $subtotal,
+                    $fee,
+                    $total,
+                    $status
+                );
+                $orderInsert->execute();
+                $orderId = (int) $connection->insert_id;
+                $orderInsert->close();
+
+                $itemInsert = $connection->prepare(
+                    'INSERT INTO order_items (order_id, food_id, food_name, food_image, quantity, unit_price, item_total) VALUES (?, ?, ?, ?, ?, ?, ?)'
+                );
+                foreach ($itemsToSave as $item) {
+                    $foodId = $item['foodId'];
+                    $foodName = $item['name'];
+                    $foodImage = $item['image'];
+                    $quantity = $item['quantity'];
+                    $unitPrice = $item['unitPriceCents'] / 100;
+                    $itemTotal = $item['itemTotalCents'] / 100;
+                    $itemInsert->bind_param(
+                        'iissidd',
+                        $orderId,
+                        $foodId,
+                        $foodName,
+                        $foodImage,
+                        $quantity,
+                        $unitPrice,
+                        $itemTotal
+                    );
+                    $itemInsert->execute();
+                }
+                $itemInsert->close();
+                $connection->commit();
+                $transactionStarted = false;
+                unset($_SESSION['checkout_token']);
+
+                header('Location: order-confirmation.php?order=' . urlencode($orderNumber));
+                exit;
             }
-            $checkStatement->close();
-
-            if ($orderNumber === '') {
-                throw new Exception('Could not generate a unique order number.');
-            }
-
-            // Save order items in the same transaction when the order_items table is added.
-            $insert = db()->prepare(
-                'INSERT INTO orders (order_number, user_id, customer_name, student_id, customer_email, customer_phone, pickup_location, pickup_time, special_instructions, payment_method, subtotal, fee, total, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-            );
-            $insert->bind_param(
-                'sissssssssddds',
-                $orderNumber,
-                $userId,
-                $name,
-                $studentId,
-                $email,
-                $phone,
-                $pickupLocation,
-                $pickupTime,
-                $instructions,
-                $paymentMethod,
-                $subtotal,
-                $fee,
-                $total,
-                $status
-            );
-            $insert->execute();
-            $insert->close();
-
-            header('Location: order-confirmation.php?order=' . urlencode($orderNumber));
-            exit;
         } catch (Exception $e) {
+            if ($transactionStarted) {
+                $connection->rollback();
+            }
             error_log('CampusBite order save failed: ' . $e->getMessage());
             $checkoutError = 'We could not save your order. Please try again.';
         }
     }
 }
+
+$checkoutFoods = [];
+try {
+    $foodResult = db()->query('SELECT id, name, description, category, price, image, vegetarian, available FROM foods ORDER BY id');
+    while ($food = $foodResult->fetch_assoc()) {
+        $checkoutFoods[] = [
+            'id' => (int) $food['id'], 'name' => $food['name'], 'description' => $food['description'],
+            'category' => $food['category'], 'price' => (float) $food['price'], 'image' => $food['image'],
+            'vegetarian' => (bool) $food['vegetarian'], 'available' => (bool) $food['available'],
+        ];
+    }
+} catch (Exception $e) {
+    error_log('CampusBite checkout menu lookup failed: ' . $e->getMessage());
+}
+$checkoutFoodsJson = json_encode($checkoutFoods, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE);
+if ($checkoutFoodsJson === false) { $checkoutFoodsJson = '[]'; }
 ?>
 <!doctype html>
 <html lang="en">
@@ -263,6 +335,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div id="checkout-content">
             <form id="checkout-form" method="post" action="checkout.php" novalidate>
                 <input type="hidden" name="cartData" id="cart-data" value="">
+                <input type="hidden" name="checkoutToken" value="<?= escapeOutput($_SESSION['checkout_token']) ?>">
                 <?php if ($checkoutError !== ''): ?>
                     <p class="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700" role="alert"><?= escapeOutput($checkoutError) ?></p>
                 <?php endif; ?>
@@ -410,6 +483,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div id="toast"
         class="pointer-events-none fixed bottom-5 left-1/2 z-[60] hidden -translate-x-1/2 rounded-full bg-ink px-5 py-3 text-sm font-bold text-white shadow-xl"
         role="status" aria-live="polite"></div>
+    <script>window.CAMPUSBITE_FOODS = <?= $checkoutFoodsJson ?>;</script>
     <script src="js/checkout.js"></script>
 </body>
 

@@ -27,6 +27,10 @@ let currentOrder = null;
 // ─── Load Foods ────────────────────────────────────────────────────────────
 
 function loadFoods() {
+  if (Array.isArray(window.CAMPUSBITE_FOODS)) {
+    FOOD_ITEMS = window.CAMPUSBITE_FOODS;
+    return;
+  }
   try {
     const raw = localStorage.getItem(FOODS_KEY);
     if (raw) {
@@ -279,8 +283,8 @@ function renderCancelledState() {
 
 function renderOrderItems(order) {
   const itemsHtml = order.items && order.items.length ? order.items.map(line => {
-    const food = foodById(line.id);
-    const img  = food?.image || '';
+    const imageValue = String(line.image || '');
+    const img = /^(https?:\/\/|\/)/i.test(imageValue) ? escapeHtml(imageValue) : '';
     return `
       <div class="flex items-center gap-3 py-2">
         <div class="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-orange-100">
@@ -292,7 +296,7 @@ function renderOrderItems(order) {
           <p class="text-sm font-bold text-ink">${escapeHtml(line.name)}</p>
           <p class="text-xs text-stone-500">${line.quantity} × ${money(line.price)}</p>
         </div>
-        <p class="shrink-0 text-sm font-extrabold text-ink">${money(line.price * line.quantity)}</p>
+        <p class="shrink-0 text-sm font-extrabold text-ink">${money(line.total == null ? line.price * line.quantity : line.total)}</p>
       </div>
     `;
   }).join('') : '<p class="mt-3 text-sm text-stone-500">Item details will be available in a future update.</p>';
@@ -388,20 +392,26 @@ function closeModal() {
 function confirmCancel() {
   if (!currentOrder) return;
 
-  try {
-    const raw    = localStorage.getItem(ORDERS_KEY);
-    const orders = raw ? JSON.parse(raw) : [];
-    const idx    = orders.findIndex(o => o.orderId === currentOrder.orderId);
-    if (idx !== -1) {
-      orders[idx].status = 'Cancelled';
-      saveOrders(orders);
-      currentOrder.status = 'Cancelled';
-      renderOrder(currentOrder);
-      showToast('Order cancelled');
-    }
-  } catch {
-    showToast('Could not cancel order');
-  }
+  const form = document.createElement('form');
+  form.method = 'post';
+  form.action = 'order-details.php?id=' + encodeURIComponent(currentOrder.orderId);
+
+  const values = {
+    action: 'cancel',
+    orderNumber: currentOrder.orderId,
+    actionToken: window.CAMPUSBITE_ACTION_TOKEN,
+  };
+
+  Object.keys(values).forEach(name => {
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = name;
+    input.value = values[name];
+    form.appendChild(input);
+  });
+
+  document.body.appendChild(form);
+  form.submit();
 }
 
 // ─── Order Again ─────────────────────────────────────────────────────────────

@@ -94,18 +94,13 @@ function bindEvents() {
 // ─── Data ────────────────────────────────────────────────────────────────────
 
 function loadOrders() {
-  try {
-    const raw = localStorage.getItem(ORDERS_KEY);
-    orders = raw ? JSON.parse(raw) : [];
-    if (!Array.isArray(orders)) orders = [];
-    orders = orders.filter(o => o && o.orderId && Array.isArray(o.items));
-  } catch {
-    orders = [];
-  }
+  orders = Array.isArray(window.CAMPUSBITE_ADMIN_ORDERS) ? window.CAMPUSBITE_ADMIN_ORDERS : [];
 }
 
-function saveOrders() {
-  localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
+async function updateOrderStatus(orderId, status) {
+  const data = new URLSearchParams({ action: 'update_order', token: window.CAMPUSBITE_ADMIN_TOKEN, order_number: orderId, status });
+  const response = await fetch('admin-actions.php', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: data });
+  return response.json();
 }
 
 // ─── Filtering, Searching, Sorting ──────────────────────────────────────────
@@ -257,7 +252,7 @@ function orderCard(order) {
 
 // ─── Status Update ───────────────────────────────────────────────────────────
 
-function handleStatusUpdate(e) {
+async function handleStatusUpdate(e) {
   const btn = e.target.closest('[data-apply-status]');
   if (!btn) return;
 
@@ -273,10 +268,15 @@ function handleStatusUpdate(e) {
   const order = orders.find(o => o.orderId === orderId);
   if (!order) return;
 
-  order.status = newStatus;
-  saveOrders();
-  render();
-  showToast(`Order #${orderId} updated to ${STATUS_LABELS[newStatus]}.`);
+  try {
+    const result = await updateOrderStatus(orderId, newStatus);
+    if (!result.success) { showToast(result.message); return; }
+    order.status = newStatus;
+    render();
+    showToast(`Order #${orderId} updated to ${STATUS_LABELS[newStatus]}.`);
+  } catch {
+    showToast('Order status could not be saved.');
+  }
 }
 
 // ─── Empty States ────────────────────────────────────────────────────────────

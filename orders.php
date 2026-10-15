@@ -9,8 +9,27 @@ if (empty($_SESSION['user_id'])) {
 
 $orders = [];
 try {
-    $statement = db()->prepare('SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC');
     $userId = (int) $_SESSION['user_id'];
+    $itemsByOrder = [];
+    $itemStatement = db()->prepare(
+        'SELECT oi.order_id, oi.food_id, oi.food_name, oi.food_image, oi.quantity, oi.unit_price, oi.item_total FROM order_items oi INNER JOIN orders o ON o.id = oi.order_id WHERE o.user_id = ? ORDER BY oi.id'
+    );
+    $itemStatement->bind_param('i', $userId);
+    $itemStatement->execute();
+    $itemResult = $itemStatement->get_result();
+    while ($item = $itemResult->fetch_assoc()) {
+        $itemsByOrder[$item['order_id']][] = [
+            'id' => $item['food_id'] === null ? null : (int) $item['food_id'],
+            'name' => $item['food_name'],
+            'image' => $item['food_image'],
+            'quantity' => (int) $item['quantity'],
+            'price' => (float) $item['unit_price'],
+            'total' => (float) $item['item_total'],
+        ];
+    }
+    $itemStatement->close();
+
+    $statement = db()->prepare('SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC');
     $statement->bind_param('i', $userId);
     $statement->execute();
     $result = $statement->get_result();
@@ -23,7 +42,7 @@ try {
             'pickup' => ['location' => $row['pickup_location'], 'time' => $row['pickup_time']],
             'specialInstructions' => $row['special_instructions'],
             'paymentMethod' => $row['payment_method'],
-            'items' => [],
+            'items' => $itemsByOrder[$row['id']] ?? [],
             'subtotal' => (float) $row['subtotal'],
             'convenienceFee' => (float) $row['fee'],
             'total' => (float) $row['total'],

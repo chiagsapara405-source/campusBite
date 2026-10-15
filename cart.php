@@ -1,3 +1,21 @@
+<?php
+require_once __DIR__ . '/db.php';
+$cartFoods = [];
+try {
+    $result = db()->query('SELECT id, name, description, category, price, image, vegetarian, available FROM foods ORDER BY id');
+    while ($food = $result->fetch_assoc()) {
+        $cartFoods[] = [
+            'id' => (int) $food['id'], 'name' => $food['name'], 'description' => $food['description'],
+            'category' => $food['category'], 'price' => (float) $food['price'], 'image' => $food['image'],
+            'vegetarian' => (bool) $food['vegetarian'], 'available' => (bool) $food['available'],
+        ];
+    }
+} catch (Exception $e) {
+    error_log('CampusBite cart menu lookup failed: ' . $e->getMessage());
+}
+$cartFoodsJson = json_encode($cartFoods, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE);
+if ($cartFoodsJson === false) { $cartFoodsJson = '[]'; }
+?>
 <!doctype html>
 <html lang="en">
 
@@ -100,6 +118,7 @@
     <div id="toast"
         class="pointer-events-none fixed bottom-5 left-1/2 z-[60] hidden -translate-x-1/2 rounded-full bg-ink px-5 py-3 text-sm font-bold text-white shadow-xl"
         role="status" aria-live="polite"></div>
+    <script>window.CAMPUSBITE_FOODS = <?= $cartFoodsJson ?>;</script>
     <script src="js/cart.js"></script>
 </body>
 

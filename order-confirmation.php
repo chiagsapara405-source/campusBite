@@ -19,6 +19,26 @@ if ($orderNumber !== '') {
         $row = $statement->get_result()->fetch_assoc();
 
         if ($row) {
+            $orderItems = [];
+            $itemStatement = db()->prepare(
+                'SELECT food_id, food_name, food_image, quantity, unit_price, item_total FROM order_items WHERE order_id = ? ORDER BY id'
+            );
+            $orderId = (int) $row['id'];
+            $itemStatement->bind_param('i', $orderId);
+            $itemStatement->execute();
+            $itemResult = $itemStatement->get_result();
+            while ($item = $itemResult->fetch_assoc()) {
+                $orderItems[] = [
+                    'id' => $item['food_id'] === null ? null : (int) $item['food_id'],
+                    'name' => $item['food_name'],
+                    'image' => $item['food_image'],
+                    'quantity' => (int) $item['quantity'],
+                    'price' => (float) $item['unit_price'],
+                    'total' => (float) $item['item_total'],
+                ];
+            }
+            $itemStatement->close();
+
             $order = [
                 'orderId' => $row['order_number'],
                 'createdAt' => $row['created_at'],
@@ -26,7 +46,7 @@ if ($orderNumber !== '') {
                 'pickup' => ['location' => $row['pickup_location'], 'time' => $row['pickup_time']],
                 'specialInstructions' => $row['special_instructions'],
                 'paymentMethod' => $row['payment_method'],
-                'items' => [],
+                'items' => $orderItems,
                 'subtotal' => (float) $row['subtotal'],
                 'convenienceFee' => (float) $row['fee'],
                 'total' => (float) $row['total'],

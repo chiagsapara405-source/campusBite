@@ -103,18 +103,7 @@ function getOrderIdFromURL() {
 }
 
 function loadOrders() {
-  try {
-    const raw = localStorage.getItem(ORDERS_KEY);
-    orders = raw ? JSON.parse(raw) : [];
-    if (!Array.isArray(orders)) orders = [];
-    orders = orders.filter(o => o && o.orderId && Array.isArray(o.items));
-  } catch {
-    orders = [];
-  }
-}
-
-function saveOrders() {
-  localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
+  orders = window.CAMPUSBITE_ADMIN_ORDER ? [window.CAMPUSBITE_ADMIN_ORDER] : [];
 }
 
 // ─── Render ──────────────────────────────────────────────────────────────────
@@ -349,19 +338,22 @@ function renderItems(o) {
 
 // ─── Status Update ───────────────────────────────────────────────────────────
 
-function applyStatusUpdate() {
+async function applyStatusUpdate() {
   const select    = $('status-select');
   const newStatus = select?.value;
   if (!newStatus) return;
 
-  order.status = newStatus;
-
-  const idx = orders.findIndex(o => o.orderId === order.orderId);
-  if (idx !== -1) orders[idx] = order;
-
-  saveOrders();
-  renderOrder();
-  showToast(`Order #${order.orderId} updated to ${STATUS_LABELS[newStatus]}.`);
+  try {
+    const data = new URLSearchParams({ action: 'update_order', token: window.CAMPUSBITE_ADMIN_TOKEN, order_number: order.orderId, status: newStatus });
+    const response = await fetch('admin-actions.php', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: data });
+    const result = await response.json();
+    if (!result.success) { showToast(result.message); return; }
+    order.status = newStatus;
+    renderOrder();
+    showToast(`Order #${order.orderId} updated to ${STATUS_LABELS[newStatus]}.`);
+  } catch {
+    showToast('Order status could not be saved.');
+  }
 }
 
 // ─── Cancel ──────────────────────────────────────────────────────────────────
@@ -377,16 +369,19 @@ function closeCancelModal() {
   $('cancel-modal').classList.remove('flex');
 }
 
-function confirmCancel() {
-  order.status = 'Cancelled';
-
-  const idx = orders.findIndex(o => o.orderId === order.orderId);
-  if (idx !== -1) orders[idx] = order;
-
-  saveOrders();
-  closeCancelModal();
-  renderOrder();
-  showToast(`Order #${order.orderId} has been cancelled.`);
+async function confirmCancel() {
+  const data = new URLSearchParams({ action: 'update_order', token: window.CAMPUSBITE_ADMIN_TOKEN, order_number: order.orderId, status: 'Cancelled' });
+  try {
+    const response = await fetch('admin-actions.php', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: data });
+    const result = await response.json();
+    if (!result.success) { showToast(result.message); return; }
+    order.status = 'Cancelled';
+    closeCancelModal();
+    renderOrder();
+    showToast(`Order #${order.orderId} has been cancelled.`);
+  } catch {
+    showToast('Order could not be cancelled.');
+  }
 }
 
 // ─── Not Found ───────────────────────────────────────────────────────────────

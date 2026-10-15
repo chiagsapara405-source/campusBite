@@ -131,24 +131,30 @@ function bindEvents() {
 // ─── Data ────────────────────────────────────────────────────────────────────
 
 function loadFoods() {
-  try {
-    const raw = localStorage.getItem(FOODS_KEY);
-    if (raw) {
-      foods = JSON.parse(raw);
-      if (!Array.isArray(foods)) foods = [];
-    }
-    if (!foods.length) {
-      foods = JSON.parse(JSON.stringify(DEFAULT_FOODS));
-      saveFoods();
-    }
-  } catch {
-    foods = JSON.parse(JSON.stringify(DEFAULT_FOODS));
-    saveFoods();
-  }
+  foods = Array.isArray(window.CAMPUSBITE_ADMIN_FOODS) ? window.CAMPUSBITE_ADMIN_FOODS : [];
 }
 
-function saveFoods() {
-  localStorage.setItem(FOODS_KEY, JSON.stringify(foods));
+async function saveFood(data) {
+  const body = new URLSearchParams({
+    action: 'save_food',
+    token: window.CAMPUSBITE_ADMIN_TOKEN,
+    id: data.id || '',
+    name: data.name,
+    description: data.description,
+    category: data.category,
+    price: data.price,
+    image: data.image,
+    vegetarian: data.vegetarian ? '1' : '0',
+    available: data.available ? '1' : '0',
+  });
+  const response = await fetch('admin-actions.php', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body });
+  return response.json();
+}
+
+async function changeFood(action, id) {
+  const body = new URLSearchParams({ action, token: window.CAMPUSBITE_ADMIN_TOKEN, id: String(id) });
+  const response = await fetch('admin-actions.php', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body });
+  return response.json();
 }
 
 function nextId() {
@@ -255,7 +261,6 @@ function foodCard(f) {
       <div class="p-4">
         <div class="flex items-start justify-between gap-2">
           <h3 class="font-display text-lg font-bold text-ink">${escapeHtml(f.name)}</h3>
-          <span class="shrink-0 text-sm font-bold text-orange-600">★ ${f.rating}</span>
         </div>
         <p class="mt-1 text-xs text-stone-500">${escapeHtml(f.category)}</p>
         <p class="mt-1 text-sm font-extrabold text-ink">${money(f.price)}</p>
@@ -311,9 +316,7 @@ function openModal(id) {
     $('field-desc').value    = f.description;
     $('field-category').value = f.category;
     $('field-price').value   = f.price;
-    $('field-rating').value  = f.rating;
     $('field-image').value   = f.image || '';
-    $('field-ingredients').value = f.ingredients || '';
     $('field-vegetarian').checked = f.vegetarian;
     $('field-available').checked  = f.available;
   } else {
@@ -321,7 +324,6 @@ function openModal(id) {
     $('edit-id').value = '';
     $('field-vegetarian').checked = true;
     $('field-available').checked  = true;
-    $('field-rating').value = '4.0';
   }
 
   $('food-modal').classList.remove('hidden');
@@ -341,7 +343,7 @@ function closeModal() {
 
 // ─── Form Validation & Submit ───────────────────────────────────────────────
 
-function handleFormSubmit(e) {
+async function handleFormSubmit(e) {
   e.preventDefault();
   clearAllErrors();
 
@@ -349,9 +351,7 @@ function handleFormSubmit(e) {
   const description = $('field-desc').value.trim();
   const category    = $('field-category').value;
   const price       = parseFloat($('field-price').value);
-  const rating      = parseFloat($('field-rating').value) || 0;
   const image       = $('field-image').value.trim();
-  const ingredients = $('field-ingredients').value.trim();
   const vegetarian  = $('field-vegetarian').checked;
   const available   = $('field-available').checked;
 
@@ -373,35 +373,23 @@ function handleFormSubmit(e) {
     showFieldError('field-price', 'Price must be greater than 0.');
     valid = false;
   }
-  if (rating < 0 || rating > 5) {
-    showFieldError('field-rating', 'Rating must be between 0 and 5.');
-    valid = false;
-  }
-
   if (!valid) return;
 
-  if (editingId) {
-    const idx = foods.findIndex(f => f.id === editingId);
-    if (idx !== -1) {
-      foods[idx] = {
-        ...foods[idx],
-        name, description, category, price, rating, image, ingredients, vegetarian, available,
-      };
+  try {
+    const result = await saveFood({ id: editingId, name, description, category, price, image, vegetarian, available });
+    if (!result.success) { showToast(result.message); return; }
+    const savedFood = { id: Number(result.id), name, description, category, price, image, vegetarian, available, rating: 0, ingredients: '' };
+    if (editingId) {
+      const index = foods.findIndex(food => food.id === editingId);
+      if (index !== -1) foods[index] = savedFood;
+    } else {
+      foods.push(savedFood);
     }
-    saveFoods();
     closeModal();
     renderFoodList();
-    showToast('Food item updated successfully.');
-  } else {
-    const newItem = {
-      id: nextId(),
-      name, description, category, price, rating, image, ingredients, vegetarian, available,
-    };
-    foods.push(newItem);
-    saveFoods();
-    closeModal();
-    renderFoodList();
-    showToast('Food item added successfully.');
+    showToast('Food item saved successfully.');
+  } catch {
+    showToast('Food item could not be saved.');
   }
 }
 
@@ -425,13 +413,18 @@ function clearAllErrors() {
 
 // ─── Availability Toggle ────────────────────────────────────────────────────
 
-function toggleAvailability(id) {
+async function toggleAvailability(id) {
   const f = foods.find(x => x.id === id);
   if (!f) return;
-  f.available = !f.available;
-  saveFoods();
-  renderFoodList();
-  showToast(`${f.name} is now ${f.available ? 'available' : 'unavailable'}.`);
+  try {
+    const result = await changeFood('toggle_food', id);
+    if (!result.success) { showToast(result.message); return; }
+    f.available = !f.available;
+    renderFoodList();
+    showToast(`${f.name} is now ${f.available ? 'available' : 'unavailable'}.`);
+  } catch {
+    showToast('Availability could not be updated.');
+  }
 }
 
 // ─── Delete ──────────────────────────────────────────────────────────────────
@@ -456,14 +449,19 @@ function closeDeleteModal() {
   deletingId = null;
 }
 
-function confirmDelete() {
+async function confirmDelete() {
   if (!deletingId) return;
   const f = foods.find(x => x.id === deletingId);
-  foods = foods.filter(x => x.id !== deletingId);
-  saveFoods();
-  closeDeleteModal();
-  renderFoodList();
-  showToast(`${f?.name || 'Item'} deleted.`);
+  try {
+    const result = await changeFood('delete_food', deletingId);
+    if (!result.success) { showToast(result.message); return; }
+    foods = foods.filter(x => x.id !== deletingId);
+    closeDeleteModal();
+    renderFoodList();
+    showToast(`${f?.name || 'Item'} deleted.`);
+  } catch {
+    showToast('Food item could not be deleted.');
+  }
 }
 
 // ─── Reset Filters ──────────────────────────────────────────────────────────

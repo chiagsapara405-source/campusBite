@@ -201,9 +201,10 @@ if ($profile['name'] !== '') {
   <header class="sticky top-0 z-40 border-b border-orange-100 bg-white/95 backdrop-blur">
     <nav class="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8" aria-label="Primary navigation">
       <a href="index.php" class="focus-ring flex shrink-0 items-center gap-2.5 rounded-xl" aria-label="CampusBite home"><span class="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-600 text-xl" aria-hidden="true">🍔</span><span class="font-display text-xl font-bold text-ink">Campus<span class="text-orange-600">Bite</span></span></a>
-      <div class="hidden items-center gap-1 md:flex"><a href="index.php" class="focus-ring rounded-full px-4 py-2 text-sm font-bold text-stone-600 hover:bg-orange-50">Home</a><a href="menu.php" class="focus-ring rounded-full px-4 py-2 text-sm font-bold text-stone-600 hover:bg-orange-50">Menu</a><a href="orders.php" class="focus-ring rounded-full px-4 py-2 text-sm font-bold text-stone-600 hover:bg-orange-50">My Orders</a></div>
-      <div class="flex items-center gap-2"><a href="cart.php" class="focus-ring rounded-full bg-orange-600 px-3 py-2 text-sm font-extrabold text-white" aria-label="View cart">🛒 <span aria-hidden="true">0</span></a><a href="profile.php" class="focus-ring flex h-10 w-10 items-center justify-center rounded-full bg-orange-100 font-extrabold text-orange-800 ring-2 ring-orange-500/30" aria-current="page" aria-label="My profile"><?= escapeOutput($initials) ?></a><button type="button" class="focus-ring flex h-10 w-10 items-center justify-center rounded-xl border border-stone-200 md:hidden" aria-label="Open navigation menu">☰</button></div>
+      <div class="hidden items-center gap-1 md:flex"><a href="menu.php" class="focus-ring rounded-full px-4 py-2 text-sm font-bold text-stone-600 hover:bg-orange-50">Menu</a><a href="orders.php" class="focus-ring rounded-full px-4 py-2 text-sm font-bold text-stone-600 hover:bg-orange-50">My Orders</a></div>
+      <div class="ml-auto flex items-center gap-2"><a href="cart.php" class="focus-ring rounded-full bg-orange-600 px-3 py-2 text-sm font-extrabold text-white" aria-label="View cart">🛒 <span aria-hidden="true">0</span></a><a href="profile.php" class="focus-ring flex h-10 w-10 items-center justify-center rounded-full bg-orange-100 font-extrabold text-orange-800 ring-2 ring-orange-500/30" aria-current="page" aria-label="My profile"><?= escapeOutput($initials) ?></a><a href="logout.php" class="focus-ring rounded-full border border-stone-200 px-3 py-2 text-sm font-extrabold text-stone-700 hover:border-orange-300 hover:bg-orange-50">Logout</a><button id="menu-toggle" type="button" class="focus-ring flex h-10 w-10 items-center justify-center rounded-xl border border-stone-200 md:hidden" aria-expanded="false" aria-controls="mobile-nav" aria-label="Open navigation menu">☰</button></div>
     </nav>
+    <div id="mobile-nav" class="hidden border-t border-stone-100 bg-white px-4 py-3 md:hidden"><a href="menu.php" class="block rounded-xl px-4 py-3 font-bold hover:bg-orange-50">Menu</a><a href="orders.php" class="block rounded-xl px-4 py-3 font-bold hover:bg-orange-50">My Orders</a><a href="profile.php" aria-current="page" class="block rounded-xl bg-orange-100 px-4 py-3 font-extrabold text-orange-800">Profile</a><a href="logout.php" class="block w-full rounded-xl px-4 py-3 text-left font-bold text-red-600 hover:bg-red-50">Logout</a></div>
   </header>
 
   <main id="main-content" class="mx-auto max-w-5xl px-4 py-9 sm:px-6 sm:py-12 lg:px-8">
@@ -229,5 +230,17 @@ if ($profile['name'] !== '') {
       </form>
     </section>
   </main>
+<script>
+    const menuToggle = document.getElementById('menu-toggle');
+    const mobileNav = document.getElementById('mobile-nav');
+    if (menuToggle && mobileNav) {
+      menuToggle.addEventListener('click', () => {
+        const isExpanded = menuToggle.getAttribute('aria-expanded') === 'true';
+        menuToggle.setAttribute('aria-expanded', String(!isExpanded));
+        menuToggle.setAttribute('aria-label', isExpanded ? 'Open navigation menu' : 'Close navigation menu');
+        mobileNav.classList.toggle('hidden', isExpanded);
+      });
+    }
+  </script>
 </body>
 </html>

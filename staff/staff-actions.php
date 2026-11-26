@@ -20,7 +20,7 @@ $allowedTransitions = [
     'Ready' => ['Completed'],
 ];
 
-if ($orderNumber === '' || !isset($allowedTransitions['Pending']) || !in_array($newStatus, ['Preparing', 'Ready', 'Completed'], true)) {
+if ($orderNumber === '' || !in_array($newStatus, ['Preparing', 'Ready', 'Completed'], true)) {
     http_response_code(400);
     exit('Invalid order update.');
 }

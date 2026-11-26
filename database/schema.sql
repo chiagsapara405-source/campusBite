@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
   name          VARCHAR(100) NOT NULL,
   email         VARCHAR(150) NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
-  role          ENUM('student','admin') NOT NULL DEFAULT 'student',
+  role          ENUM('student','staff','admin') NOT NULL DEFAULT 'student',
   created_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY uq_users_email (email)

@@ -88,6 +88,7 @@ $statusLabel = [
                 <p class="text-xs font-extrabold uppercase tracking-[.18em] text-orange-600">Kitchen workspace</p>
                 <h1 class="mt-2 font-['Bricolage_Grotesque'] text-3xl font-extrabold sm:text-4xl">Order queue</h1>
                 <p class="mt-2 text-stone-500">Prepare incoming orders and keep pickup status up to date.</p>
+                <?php if (isset($_GET['updated'])): ?><p class="mt-3 inline-flex rounded-xl bg-green-50 px-3 py-2 text-sm font-bold text-green-800" role="status">Order status updated successfully.</p><?php endif; ?>
             </div>
             <a href="staff-dashboard.php" class="focus-ring w-fit rounded-xl bg-white px-4 py-2.5 text-sm font-extrabold text-stone-700 shadow-sm hover:bg-orange-50">Refresh queue</a>
         </div>

@@ -117,28 +117,26 @@ if ($ordersJson === false) {
                     class="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-600 text-xl">🍔</span><span
                     class="font-display text-xl font-bold text-ink">Campus<span
                         class="text-orange-600">Bite</span></span></a>
-            <div class="hidden items-center gap-1 md:flex"><a href="index.php"
-                    class="focus-ring rounded-full px-4 py-2 text-sm font-bold text-stone-600 hover:bg-orange-50">Home</a><a
-                    href="menu.php"
+            <div class="hidden items-center gap-1 md:flex"><a href="menu.php"
                     class="focus-ring rounded-full px-4 py-2 text-sm font-bold text-stone-600 hover:bg-orange-50">Menu</a><a
                     href="orders.php" aria-current="page"
                     class="focus-ring rounded-full bg-orange-100 px-4 py-2 text-sm font-extrabold text-orange-800">My
                     Orders</a></div>
             <div class="ml-auto flex items-center gap-1 sm:gap-2"><a href="cart.php"
                     class="focus-ring relative flex h-10 items-center gap-1.5 rounded-full bg-orange-600 px-3 text-sm font-extrabold text-white"
-                    aria-label="View cart">🛒 <span id="cart-count">0</span></a><button type="button" data-future
-                    class="focus-ring hidden h-10 w-10 rounded-full bg-orange-100 font-bold text-orange-800 sm:block"
-                    aria-label="Student profile">S</button><button id="menu-toggle" type="button"
+                    aria-label="View cart">🛒 <span id="cart-count">0</span></a><a href="profile.php"
+                    class="focus-ring hidden h-10 w-10 items-center justify-center rounded-full bg-orange-100 font-bold text-orange-800 sm:flex"
+                    aria-label="My profile">CS</a><a href="logout.php"
+                    class="focus-ring rounded-full border border-stone-200 px-3 py-2 text-sm font-extrabold text-stone-700 hover:border-orange-300 hover:bg-orange-50">Logout</a><button id="menu-toggle" type="button"
                     class="focus-ring flex h-10 w-10 items-center justify-center rounded-xl border border-stone-200 md:hidden"
                     aria-expanded="false" aria-controls="mobile-nav" aria-label="Open menu">☰</button></div>
         </nav>
-        <div id="mobile-nav" class="hidden border-t border-stone-100 bg-white px-4 py-3 md:hidden"><a href="index.php"
-                class="block rounded-xl px-4 py-3 font-bold hover:bg-orange-50">Home</a><a href="menu.php"
+        <div id="mobile-nav" class="hidden border-t border-stone-100 bg-white px-4 py-3 md:hidden"><a href="menu.php"
                 class="block rounded-xl px-4 py-3 font-bold hover:bg-orange-50">Menu</a><a href="orders.php"
                 aria-current="page"
-                class="block rounded-xl bg-orange-100 px-4 py-3 font-extrabold text-orange-800">My
-                Orders</a><button type="button" data-future
-                class="block w-full rounded-xl px-4 py-3 text-left font-bold hover:bg-orange-50">Profile</button></div>
+                class="block rounded-xl bg-orange-100 px-4 py-3 font-extrabold text-orange-800">My Orders</a><a href="profile.php"
+                class="block w-full rounded-xl px-4 py-3 text-left font-bold hover:bg-orange-50">Profile</a><a href="logout.php"
+                class="block w-full rounded-xl px-4 py-3 text-left font-bold text-red-600 hover:bg-red-50">Logout</a></div>
     </header>
     <main id="main-content" class="mx-auto max-w-7xl px-4 py-8 pb-28 sm:px-6 lg:px-8">
         <section class="mb-8">

@@ -2,7 +2,7 @@
 
 ## Project overview
 
-CampusBite is a college cafeteria food-ordering application built with PHP and MySQL. It provides a student-facing ordering experience and a role-restricted administrator portal.
+CampusBite is a college cafeteria food-ordering application built with PHP and MySQL. It provides student ordering, a role-restricted staff kitchen queue, and an administrator portal.
 
 The application runs locally through an Apache/PHP/MySQL environment such as XAMPP.
 
@@ -17,8 +17,14 @@ The application runs locally through an Apache/PHP/MySQL environment such as XAM
 - Individual order details and cancellation
 - Student profile and preferences
 
+**Staff portal**
+- Staff-only kitchen order queue
+- View active orders and item/pickup details
+- Move orders through Pending → Preparing → Ready → Completed
+
 **Admin portal**
 - Restricted administrator login
+- Promote existing student accounts to Staff or return Staff accounts to Student
 - Dashboard and order overview
 - Kitchen order queue and status management
 - Food item management
@@ -69,7 +75,7 @@ These are local development defaults, not production credentials.
 | Route | File | Purpose |
 |---|---|---|
 | `/` | `index.php` | Landing page |
-| `/login.php` | `login.php` | Student/admin sign-in |
+| `/login.php` | `login.php` | Student/staff/admin sign-in |
 | `/register.php` | `register.php` | Student registration |
 | `/logout.php` | `logout.php` | Session logout |
 | `/menu.php` | `menu.php` | Database-backed food menu |
@@ -82,6 +88,18 @@ These are local development defaults, not production credentials.
 
 The landing page currently uses an HTML document served through `index.php`. Do not assume every `.php` file contains server-side logic.
 
+## Staff portal
+
+Staff pages live under `staff/` and require the `staff` session role.
+
+| Route | File | Purpose |
+|---|---|---|
+| `/staff/staff-dashboard.php` | `staff/staff-dashboard.php` | Active kitchen order queue |
+| `/staff/staff-actions.php` | `staff/staff-actions.php` | CSRF-protected order status transitions |
+| `/staff/staff-common.php` | `staff/staff-common.php` | Staff role guard and helpers |
+
+Staff may advance orders through Pending → Preparing → Ready → Completed. Staff cannot cancel orders or access administrator management pages/actions.
+
 ## Administrator portal
 
 Administrator pages live under `admin/`.
@@ -93,6 +111,7 @@ Administrator pages live under `admin/`.
 | `/admin/admin-order-details.php` | `admin/admin-order-details.php` | Individual order management |
 | `/admin/admin-menu.php` | `admin/admin-menu.php` | Food catalog management |
 | `/admin/admin-students.php` | `admin/admin-students.php` | Student directory |
+| `/admin/admin-staff.php` | `admin/admin-staff.php` | Assign Staff role to existing accounts |
 | `/admin/admin-settings.php` | `admin/admin-settings.php` | Cafeteria configuration |
 | `/admin/admin-common.php` | `admin/admin-common.php` | Shared admin authentication and helpers |
 | `/admin/admin-actions.php` | `admin/admin-actions.php` | Administrative POST/AJAX actions |
@@ -128,7 +147,8 @@ The SQL file contains a demo administrator seed. Treat demo credentials as devel
 
 - Use PHP sessions for authenticated user state.
 - Store password hashes, never plaintext passwords.
-- Preserve role checks for administrator-only pages and actions.
+- Preserve role checks for administrator-only pages/actions and staff-only kitchen routes.
+- Student registration always creates a `student` account; only an administrator can assign the `staff` role.
 - Keep student queries scoped to the authenticated user's ID.
 - Use prepared statements for database operations involving dynamic input.
 - Escape untrusted values before rendering HTML.
@@ -154,7 +174,7 @@ Avoid duplicating business logic between JavaScript and PHP. The server must rem
 1. Install and start Apache and MySQL in XAMPP.
 2. Place the repository inside the XAMPP `htdocs` directory.
 3. Create a MySQL database named `campusbite`.
-4. Import `database/schema.sql` through phpMyAdmin or the MySQL CLI.
+4. Import `database/schema.sql` through phpMyAdmin or the MySQL CLI. For an existing database, run `database/add-staff-role.sql` once to add the Staff role.
 5. Inspect the remaining required tables and apply their corresponding SQL setup scripts, if available.
 6. Confirm the database connection settings in `db.php`.
 7. Open the application through the local Apache server, for example:

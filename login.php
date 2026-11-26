@@ -31,7 +31,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['user_email'] = $user['email'];
         $_SESSION['role']       = $user['role'];
 
-        $redirect = $user['role'] === 'admin' ? 'admin/admin-dashboard.php' : 'menu.php';
+        $redirect = $user['role'] === 'admin'
+            ? 'admin/admin-dashboard.php'
+            : ($user['role'] === 'staff' ? 'staff/staff-dashboard.php' : 'menu.php');
         header('Location: ' . $redirect);
         exit;
     }
@@ -139,14 +141,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <section class="reveal reveal-3 flex items-center bg-white px-6 py-10 sm:px-10 sm:py-12 lg:px-12" aria-labelledby="login-title">
         <div class="w-full max-w-md">
           <div class="reveal reveal-4">
-            <p class="text-sm font-extrabold uppercase tracking-[.16em] text-orange-600">Student sign in</p>
+            <p class="text-sm font-extrabold uppercase tracking-[.16em] text-orange-600">CampusBite sign in</p>
             <h2 id="login-title" class="mt-3 font-display text-4xl font-extrabold tracking-tight text-ink">Welcome back</h2>
-            <p class="mt-3 leading-relaxed text-stone-500">Sign in to continue ordering your favorite campus food.</p>
+            <p class="mt-3 leading-relaxed text-stone-500">Sign in to continue to your CampusBite workspace.</p>
           </div>
 
                     <form id="login-form" class="mt-8 space-y-5" method="post" action="login.php" novalidate><?php if ($notice !== null): ?><p class="mb-1 rounded-xl bg-green-50 text-green-800 px-3.5 py-3 text-sm font-bold" role="status"><?php echo htmlspecialchars($notice, ENT_QUOTES, 'UTF-8'); ?></p><?php endif; ?>
             <div>
-              <label for="email" class="mb-2 block text-sm font-extrabold text-ink">Student email</label>
+              <label for="email" class="mb-2 block text-sm font-extrabold text-ink">College email</label>
               <input id="email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="you@college.edu" value="<?php echo htmlspecialchars($old['email'], ENT_QUOTES, 'UTF-8'); ?>" aria-describedby="email-error"<?php if (isset($errors['email'])) echo ' aria-invalid="true"'; ?> class="field block w-full rounded-xl border border-stone-200 bg-white px-4 py-3.5 text-base text-ink placeholder:text-stone-400 transition" />
               <p id="email-error" class="<?php echo isset($errors['email']) ? '' : 'hidden'; ?> mt-2 items-center gap-1.5 text-sm font-bold text-red-600" role="alert"><?php echo htmlspecialchars($errors['email'] ?? '', ENT_QUOTES, 'UTF-8'); ?></p>
             </div>
